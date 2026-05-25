@@ -40,9 +40,8 @@ export async function signup(formData: FormData) {
   // Create profile row
   if (data.user) {
     await supabase.from('profiles').insert({
-      user_id: data.user.id,
+      id: data.user.id,
       username,
-      email,
     })
   }
 
