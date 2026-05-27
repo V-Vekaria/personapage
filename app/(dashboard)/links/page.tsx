@@ -102,7 +102,7 @@ export default async function LinksPage({
               <div>
                 <div className="text-white text-sm font-medium">{link.label || link.context}</div>
                 <div className="text-zinc-500 text-xs mt-0.5">
-                  persona.page/{username}/{link.slug}
+                  /p/{username}?link={link.slug}
                 </div>
               </div>
               <div className="flex items-center gap-3">

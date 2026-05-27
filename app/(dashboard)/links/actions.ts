@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation'
 
 function generateSlug(username: string, context: string): string {
   const suffix = Math.random().toString(36).substring(2, 6)
-  return `${username}-${context.replace('_', '-')}-${suffix}`
+  return `${username.toLowerCase()}-${context.replace('_', '-')}-${suffix}`
 }
 
 export async function createLink(formData: FormData) {
