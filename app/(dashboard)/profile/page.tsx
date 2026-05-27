@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { saveProfile } from './actions'
+import { ProjectsEditor } from './ProjectsEditor'
 
 export default async function ProfilePage({
   searchParams,
@@ -17,9 +18,8 @@ export default async function ProfilePage({
     .eq('id', user!.id)
     .single()
 
-  // Default to one empty project slot if no projects saved yet
   const projects: { title: string; description: string; tech: string[] }[] =
-    profile?.projects ?? [{ title: '', description: '', tech: [] }]
+    profile?.projects ?? []
 
   return (
     <div className="p-8 max-w-2xl">
@@ -102,38 +102,7 @@ export default async function ProfilePage({
         </div>
 
         {/* ── Projects ── */}
-        <div>
-          <label className="block text-sm text-zinc-400 mb-3">Projects</label>
-          <div className="space-y-4">
-            {projects.map((project, i) => (
-              <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-3">
-                {/* Project name */}
-                <input
-                  name="project_title"
-                  defaultValue={project.title}
-                  className="w-full bg-zinc-950 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-600 transition"
-                  placeholder="Project name e.g. PersonaPage"
-                />
-                {/* Project description */}
-                <textarea
-                  name="project_description"
-                  defaultValue={project.description}
-                  rows={2}
-                  className="w-full bg-zinc-950 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-600 transition resize-none"
-                  placeholder="What does it do? What problem does it solve?"
-                />
-                {/* Tech stack — comma separated */}
-                <input
-                  name="project_tech"
-                  defaultValue={project.tech?.join(', ')}
-                  className="w-full bg-zinc-950 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-600 transition"
-                  placeholder="Tech used e.g. Next.js, Supabase, OpenAI"
-                />
-              </div>
-            ))}
-          </div>
-          <p className="text-zinc-600 text-xs mt-2">Add your key projects — the AI uses these to tailor your profile</p>
-        </div>
+        <ProjectsEditor initial={projects} />
 
         {/* ── Tone ── */}
         <div>
