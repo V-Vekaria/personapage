@@ -5,6 +5,7 @@ import type { Metadata } from 'next'
 
 interface Props {
   params: Promise<{ username: string }>
+  searchParams: Promise<{ link?: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -15,11 +16,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export default async function PublicProfilePage({ params }: Props) {
+export default async function PublicProfilePage({ params, searchParams }: Props) {
   const { username } = await params
+  const { link: slug } = await searchParams
   const supabase = await createClient()
 
-  // 1. Find the profile by username
+  // ── 1. Find profile by username ──
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
@@ -28,29 +30,45 @@ export default async function PublicProfilePage({ params }: Props) {
 
   if (!profile) notFound()
 
-  // 2. Get their first active link
-  const { data: links } = await supabase
-    .from('links')
-    .select('*')
-    .eq('user_id', profile.id)
-    .eq('is_active', true)
-    .order('created_at', { ascending: true })
+  // ── 2. Load the specific link if slug provided, else fall back to first active link ──
+  let activeLink = null
 
-  const primaryLink = links?.[0]
+  if (slug) {
+    // Visitor came via a shared link — load that link's AI content
+    const { data } = await supabase
+      .from('links')
+      .select('*')
+      .eq('slug', slug)
+      .eq('user_id', profile.id)
+      .single()
+    activeLink = data
+  } else {
+    // No slug — show default (first active link)
+    const { data } = await supabase
+      .from('links')
+      .select('*')
+      .eq('user_id', profile.id)
+      .eq('is_active', true)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .single()
+    activeLink = data
+  }
 
-  // Parse data
+  // ── 3. Parse profile data ──
   const skills: string[] = profile.skills ?? []
   const projects: any[] = profile.projects ?? []
-  const generatedContent = primaryLink?.generated_content
+  const generatedContent = activeLink?.generated_content // AI-generated content for this link
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
-      {/* Analytics capture — invisible */}
-      {primaryLink && <ViewCapture linkId={primaryLink.id} />}
+
+      {/* Analytics — invisible component that records this page view */}
+      {activeLink && <ViewCapture linkId={activeLink.id} />}
 
       <div className="max-w-2xl mx-auto px-6 py-16">
 
-        {/* Header */}
+        {/* ── Header: Name + AI headline ── */}
         <div className="mb-12">
           <h1 className="text-3xl font-semibold text-white mb-2">
             {profile.full_name || username}
@@ -60,7 +78,7 @@ export default async function PublicProfilePage({ params }: Props) {
           </p>
         </div>
 
-        {/* About */}
+        {/* ── About: AI summary or raw bio ── */}
         {(generatedContent?.summary || profile.bio) && (
           <div className="mb-12">
             <h2 className="text-xs font-medium text-zinc-500 uppercase tracking-widest mb-4">
@@ -72,7 +90,7 @@ export default async function PublicProfilePage({ params }: Props) {
           </div>
         )}
 
-        {/* Projects */}
+        {/* ── Projects ── */}
         {projects.length > 0 && (
           <div className="mb-12">
             <h2 className="text-xs font-medium text-zinc-500 uppercase tracking-widest mb-4">
@@ -80,21 +98,14 @@ export default async function PublicProfilePage({ params }: Props) {
             </h2>
             <div className="space-y-6">
               {projects.map((project: any, i: number) => (
-                <div
-                  key={i}
-                  className="border border-zinc-800 rounded-xl p-5 bg-zinc-900/50"
-                >
+                <div key={i} className="border border-zinc-800 rounded-xl p-5 bg-zinc-900/50">
                   <h3 className="text-white font-medium mb-1">{project.title}</h3>
-                  <p className="text-zinc-400 text-sm leading-relaxed mb-3">
-                    {project.description}
-                  </p>
+                  <p className="text-zinc-400 text-sm leading-relaxed mb-3">{project.description}</p>
+                  {/* Tech stack tags */}
                   {project.tech && project.tech.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {project.tech.map((t: string, j: number) => (
-                        <span
-                          key={j}
-                          className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded"
-                        >
+                        <span key={j} className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded">
                           {t}
                         </span>
                       ))}
@@ -106,7 +117,7 @@ export default async function PublicProfilePage({ params }: Props) {
           </div>
         )}
 
-        {/* Skills */}
+        {/* ── Skills ── */}
         {skills.length > 0 && (
           <div className="mb-12">
             <h2 className="text-xs font-medium text-zinc-500 uppercase tracking-widest mb-4">
@@ -114,10 +125,7 @@ export default async function PublicProfilePage({ params }: Props) {
             </h2>
             <div className="flex flex-wrap gap-2">
               {skills.map((skill: string, i: number) => (
-                <span
-                  key={i}
-                  className="text-sm bg-zinc-900 border border-zinc-800 text-zinc-300 px-3 py-1 rounded-full"
-                >
+                <span key={i} className="text-sm bg-zinc-900 border border-zinc-800 text-zinc-300 px-3 py-1 rounded-full">
                   {skill}
                 </span>
               ))}
@@ -125,22 +133,31 @@ export default async function PublicProfilePage({ params }: Props) {
           </div>
         )}
 
-        {/* CTA */}
+        {/* ── Get in Touch: AI CTA + contact link ── */}
         <div className="mb-16">
           <h2 className="text-xs font-medium text-zinc-500 uppercase tracking-widest mb-4">
             Get in touch
           </h2>
-          <p className="text-zinc-300 text-sm">
+          <p className="text-zinc-300 text-sm mb-3">
             {generatedContent?.cta_text || 'Open to opportunities and conversations.'}
           </p>
+          {/* Show connect button if user has set a contact URL */}
+          {profile.contact && (
+            
+            <a
+              href={profile.contact.startsWith('http') ? profile.contact : 'https://' + profile.contact}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 px-4 py-2 rounded-lg transition"
+            >
+              Connect →
+            </a>
+          )}
         </div>
 
-        {/* Footer — growth loop */}
+        {/* ── Footer: Growth loop ── */}
         <div className="border-t border-zinc-800 pt-6">
-          <a
-            href="/"
-            className="text-xs text-zinc-600 hover:text-zinc-400 transition"
-          >
+          <a href="/" className="text-xs text-zinc-600 hover:text-zinc-400 transition">
             Built with PersonaPage
           </a>
         </div>

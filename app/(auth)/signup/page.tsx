@@ -1,13 +1,18 @@
 import { signup } from './actions'
 
-export default function SignupPage({
-  searchParams,
-}: {
-  searchParams: { error?: string }
-}) {
+interface Props {
+  searchParams: Promise<{ error?: string }>
+}
+
+export default async function SignupPage({ searchParams }: Props) {
+  // Next.js 15 requires awaiting searchParams
+  const params = await searchParams
+
   return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
+
+        {/* ── Header ── */}
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-semibold text-white tracking-tight">
             Create account
@@ -16,6 +21,8 @@ export default function SignupPage({
         </div>
 
         <form action={signup} className="space-y-4">
+
+          {/* ── Username ── */}
           <div>
             <label htmlFor="username" className="block text-sm text-zinc-400 mb-1.5">
               Username
@@ -32,8 +39,10 @@ export default function SignupPage({
                 placeholder="yourname"
               />
             </div>
+            <p className="text-zinc-600 text-xs mt-1">This is your public URL — choose carefully</p>
           </div>
 
+          {/* ── Email ── */}
           <div>
             <label htmlFor="email" className="block text-sm text-zinc-400 mb-1.5">
               Email
@@ -49,6 +58,7 @@ export default function SignupPage({
             />
           </div>
 
+          {/* ── Password ── */}
           <div>
             <label htmlFor="password" className="block text-sm text-zinc-400 mb-1.5">
               Password
@@ -64,10 +74,14 @@ export default function SignupPage({
             />
           </div>
 
-          {searchParams.error && (
-            <p className="text-red-400 text-sm text-center">{searchParams.error}</p>
+          {/* ── Error message ── */}
+          {params.error && (
+            <div className="px-4 py-3 bg-red-950 border border-red-800 rounded-lg text-red-400 text-sm">
+              {params.error}
+            </div>
           )}
 
+          {/* ── Submit ── */}
           <button
             type="submit"
             className="w-full bg-white text-zinc-950 font-medium text-sm rounded-lg py-2.5 hover:bg-zinc-100 transition"
@@ -82,6 +96,7 @@ export default function SignupPage({
             Sign in
           </a>
         </p>
+
       </div>
     </div>
   )
