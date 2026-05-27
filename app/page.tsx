@@ -46,7 +46,7 @@ export default function Home() {
             Create your page →
           </Link>
           <Link
-            href="/p/vishnu?link=vishnu-conference-zly8"
+            href="/p/vishnu?link=vishnu-conference-dqcs"
             className="text-sm text-zinc-400 hover:text-white transition"
             target="_blank"
           >
