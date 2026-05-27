@@ -1,7 +1,26 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { ViewCapture } from '@/components/public/ViewCapture'
 import type { Metadata } from 'next'
+
+function connectLabel(contact: string): string {
+  try {
+    const url = contact.startsWith('http') ? contact : 'https://' + contact
+    const host = new URL(url).hostname.replace('www.', '')
+    if (host.includes('linkedin.com')) return 'Connect on LinkedIn'
+    if (host.includes('twitter.com') || host.includes('x.com')) return 'Connect on X'
+    if (host.includes('github.com')) return 'View on GitHub'
+    if (host.includes('instagram.com')) return 'Connect on Instagram'
+    if (host.includes('facebook.com')) return 'Connect on Facebook'
+    if (host.includes('bsky.app')) return 'Connect on Bluesky'
+    if (host.includes('threads.net')) return 'Connect on Threads'
+    if (host.includes('behance.net')) return 'View on Behance'
+    if (host.includes('dribbble.com')) return 'View on Dribbble'
+    return 'Connect'
+  } catch {
+    return 'Connect'
+  }
+}
 
 interface Props {
   params: Promise<{ username: string }>
@@ -19,13 +38,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PublicProfilePage({ params, searchParams }: Props) {
   const { username } = await params
   const { link: slug } = await searchParams
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // ── 1. Find profile by username ──
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
-    .eq('username', username)
+    .ilike('username', username)
     .single()
 
   if (!profile) notFound()
@@ -143,14 +162,13 @@ export default async function PublicProfilePage({ params, searchParams }: Props)
           </p>
           {/* Show connect button if user has set a contact URL */}
           {profile.contact && (
-            
             <a
               href={profile.contact.startsWith('http') ? profile.contact : 'https://' + profile.contact}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 px-4 py-2 rounded-lg transition"
             >
-              Connect →
+              {connectLabel(profile.contact)} →
             </a>
           )}
         </div>
