@@ -8,7 +8,7 @@ export async function signup(formData: FormData) {
 
   const email = formData.get('email') as string
   const password = formData.get('password') as string
-  const username = formData.get('username') as string
+  const username = (formData.get('username') as string).toLowerCase().trim()
 
   // Basic validation
   if (username.length < 3) {
@@ -43,6 +43,13 @@ export async function signup(formData: FormData) {
       id: data.user.id,
       username,
     })
+  }
+
+  // Establish a real session so the browser gets HttpOnly cookies immediately.
+  // signUp alone doesn't set cookies in all Supabase configurations.
+  const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+  if (signInError) {
+    redirect('/signup?error=' + signInError.message)
   }
 
   redirect('/dashboard')

@@ -1,6 +1,12 @@
 import { login } from './actions'
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>
+}) {
+  const { error } = await searchParams
+
   return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
@@ -11,6 +17,13 @@ export default function LoginPage() {
           </h1>
           <p className="text-zinc-400 text-sm mt-1">Sign in to your account</p>
         </div>
+
+        {/* Error message from failed login attempt */}
+        {error && (
+          <div className="mb-4 px-4 py-3 bg-red-950 border border-red-800 rounded-lg text-red-400 text-sm">
+            {error}
+          </div>
+        )}
 
         {/* Form */}
         <form action={login} className="space-y-4">
