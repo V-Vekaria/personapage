@@ -14,7 +14,7 @@ export default async function DashboardPage() {
     <div className="p-8">
       <div className="mb-8">
         <h1 className="text-2xl font-semibold text-white">
-          Welcome back{profile?.username ? `, ${profile.username}` : ''}
+          {profile?.headline ? 'Welcome back' : 'Welcome'}{profile?.username ? `, ${profile.username}` : ''}
         </h1>
         <p className="text-zinc-400 text-sm mt-1">
           {profile?.headline ?? 'Complete your profile to get started'}
