@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import ParticleBackground from '@/components/ParticleBackground'
 
 export default function Home() {
   return (
@@ -21,37 +22,40 @@ export default function Home() {
       </nav>
 
       {/* ── Hero ── */}
-      <section className="max-w-5xl mx-auto px-8 pt-20 pb-24">
-        <div className="inline-flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-full px-3 py-1 text-xs text-zinc-400 mb-8">
-          <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full"></span>
-          Built for London Tech Week
-        </div>
+      <section className="relative overflow-hidden max-w-5xl mx-auto px-8 pt-20 pb-24">
+        <ParticleBackground />
+        <div className="relative z-10">
+          <div className="inline-flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-full px-3 py-1 text-xs text-zinc-400 mb-8">
+            <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full"></span>
+            Built for London Tech Week
+          </div>
 
-        <h1 className="text-5xl sm:text-6xl font-semibold tracking-tight leading-tight mb-6">
-          One profile.
-          <br />
-          <span className="text-zinc-500">Every room you walk into.</span>
-        </h1>
+          <h1 className="text-5xl sm:text-6xl font-semibold tracking-tight leading-tight mb-6">
+            One profile.
+            <br />
+            <span className="text-zinc-500">Every room you walk into.</span>
+          </h1>
 
-        <p className="text-zinc-400 text-lg max-w-xl leading-relaxed mb-10">
-          PersonaPage generates a different version of your professional profile for every context —
-          recruiters, investors, conference networking. One link, tailored by AI.
-        </p>
+          <p className="text-zinc-400 text-lg max-w-xl leading-relaxed mb-10">
+            PersonaPage generates a different version of your professional profile for every context —
+            recruiters, investors, conference networking. One link, tailored by AI.
+          </p>
 
-        <div className="flex items-center gap-4">
-          <Link
-            href="/signup"
-            className="bg-white text-zinc-950 font-medium px-6 py-3 rounded-lg hover:bg-zinc-100 transition"
-          >
-            Create your page →
-          </Link>
-          <Link
-            href="/p/vishnu?link=vishnu-conference-dqcs"
-            className="text-sm text-zinc-400 hover:text-white transition"
-            target="_blank"
-          >
-            See an example ↗
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/signup"
+              className="bg-white text-zinc-950 font-medium px-6 py-3 rounded-lg hover:bg-zinc-100 transition"
+            >
+              Create your page →
+            </Link>
+            <Link
+              href="/p/vishnu?link=vishnu-conference-dqcs"
+              className="text-sm text-zinc-400 hover:text-white transition"
+              target="_blank"
+            >
+              See an example ↗
+            </Link>
+          </div>
         </div>
       </section>
 
