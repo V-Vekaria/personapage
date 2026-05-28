@@ -2,6 +2,8 @@
 
 AI-powered professional identity platform for networking, creators, careers, and personal branding.
 
+**Live demo → [personapage-app.vercel.app](https://personapage-app.vercel.app)**
+
 ## Overview
 
 PersonaPage helps users create a dynamic AI-generated professional identity page from a single master profile.
