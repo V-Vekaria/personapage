@@ -22,6 +22,9 @@ build/
 *.tsbuildinfo
 next-env.d.ts
 
+# product docs — keep private, local only
+docs/
+
 # misc
 .DS_Store
 *.pem
