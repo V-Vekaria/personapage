@@ -3,7 +3,8 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'PersonaPage',
-  description: 'Your adaptive professional identity',
+  description:
+    'One master profile link with tailored versions for recruiters, networking, collaborators, and clients.',
 }
 
 export const viewport: Viewport = {
