@@ -5,10 +5,12 @@ import { DashboardNavLinks } from './DashboardNavLinks'
 
 interface Props {
   email: string
+  displayName: string
+  initial: string
   signOutForm: React.ReactNode
 }
 
-export function MobileNav({ email, signOutForm }: Props) {
+export function MobileNav({ email, displayName, initial, signOutForm }: Props) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -42,11 +44,23 @@ export function MobileNav({ email, signOutForm }: Props) {
             aria-label="Close menu"
             onClick={() => setOpen(false)}
           />
-          <div className="md:hidden fixed inset-x-0 top-[53px] z-50 border-b border-violet-300/10 bg-zinc-950/95 px-4 py-4 shadow-[0_24px_80px_rgba(24,8,45,0.55)] backdrop-blur">
+          <div className="md:hidden fixed inset-x-0 top-[53px] z-50 border-b border-violet-300/10 bg-zinc-950 px-4 py-4 shadow-[0_24px_80px_rgba(24,8,45,0.55)] backdrop-blur">
             <DashboardNavLinks onNavigate={() => setOpen(false)} />
-            <div className="border-t border-violet-300/10 mt-4 pt-4 space-y-2">
-              <p className="text-xs text-zinc-600 truncate px-3">{email}</p>
-              {signOutForm}
+            <div className="border-t border-violet-300/10 mt-4 pt-4 px-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-violet-950/60 border border-violet-300/20 text-sm font-medium text-violet-100">
+                  {initial}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-medium text-white leading-tight">
+                    {displayName}
+                  </p>
+                  <p className="text-[12px] text-zinc-500 truncate leading-tight mt-0.5">
+                    {email}
+                  </p>
+                </div>
+                {signOutForm}
+              </div>
             </div>
           </div>
         </>

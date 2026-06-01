@@ -34,16 +34,22 @@ export default async function DashboardLayout({
   const initial = displayName[0]?.toUpperCase() ?? '?'
 
   const signOutForm = (
-    <form action={signOut} className="px-3">
-      <button type="submit" className="text-xs text-zinc-500 hover:text-red-300 transition">
-        Sign out
+    <form action={signOut}>
+      <button
+        type="submit"
+        aria-label="Sign out"
+        className="p-1.5 rounded-lg text-zinc-500 hover:text-red-300 hover:bg-violet-950/35 transition"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
+        </svg>
       </button>
     </form>
   )
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,rgba(124,58,237,0.16),transparent_34rem),linear-gradient(180deg,#09090b_0%,#181020_48%,#09090b_100%)] text-white flex flex-col md:flex-row">
-      <MobileNav email={user.email ?? ''} signOutForm={signOutForm} />
+      <MobileNav email={user.email ?? ''} displayName={displayName} initial={initial} signOutForm={signOutForm} />
 
       <aside className="hidden md:flex w-56 shrink-0 border-r border-violet-300/10 bg-zinc-950/60 flex-col px-3 py-6 backdrop-blur">
         <div className="px-3 mb-8">
