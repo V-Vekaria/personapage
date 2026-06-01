@@ -22,7 +22,7 @@ export default async function ProfilePage({
     profile?.projects ?? []
 
   return (
-    <div className="p-8 max-w-2xl">
+    <div className="p-4 sm:p-6 md:p-8 max-w-2xl">
 
       {/* ── Page Header ── */}
       <div className="mb-8">
@@ -45,7 +45,7 @@ export default async function ProfilePage({
       <form action={saveProfile} className="space-y-6">
 
         {/* ── Identity: Full Name + Contact ── */}
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
             <label className="block text-sm text-zinc-400 mb-1.5">Full Name</label>
             <input
@@ -107,7 +107,7 @@ export default async function ProfilePage({
         {/* ── Tone ── */}
         <div>
           <label className="block text-sm text-zinc-400 mb-3">Tone</label>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             {['casual', 'neutral', 'formal'].map((t) => (
               <label key={t} className="flex items-center gap-2 cursor-pointer">
                 <input

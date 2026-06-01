@@ -37,7 +37,7 @@ export default function ManageLinkPage({
   }
 
   return (
-    <div className="p-8 max-w-2xl">
+    <div className="p-4 sm:p-6 md:p-8 max-w-2xl">
       <div className="mb-8 flex items-center gap-4">
         <button
           onClick={() => router.back()}

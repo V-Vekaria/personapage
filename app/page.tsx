@@ -6,7 +6,7 @@ export default function Home() {
     <div className="min-h-screen bg-zinc-950 text-white">
 
       {/* ── Nav ── */}
-      <nav className="flex items-center justify-between px-8 py-6 max-w-5xl mx-auto">
+      <nav className="flex items-center justify-between gap-4 px-4 sm:px-8 py-4 sm:py-6 max-w-5xl mx-auto">
         <span className="text-white font-semibold tracking-tight">PersonaPage</span>
         <div className="flex items-center gap-4">
           <Link href="/login" className="text-sm text-zinc-400 hover:text-white transition">
@@ -22,7 +22,7 @@ export default function Home() {
       </nav>
 
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden max-w-5xl mx-auto px-8 pt-20 pb-24">
+      <section className="relative overflow-hidden max-w-5xl mx-auto px-4 sm:px-8 pt-12 sm:pt-20 pb-16 sm:pb-24">
         <ParticleBackground />
         <div className="relative z-10">
           <div className="inline-flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-full px-3 py-1 text-xs text-zinc-400 mb-8">
@@ -30,7 +30,7 @@ export default function Home() {
             Built for London Tech Week
           </div>
 
-          <h1 className="text-5xl sm:text-6xl font-semibold tracking-tight leading-tight mb-6">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight leading-tight mb-6">
             One profile.
             <br />
             <span className="text-zinc-500">Every room you walk into.</span>
@@ -41,16 +41,16 @@ export default function Home() {
             recruiters, investors, conference networking. One link, tailored by AI.
           </p>
 
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
             <Link
               href="/signup"
-              className="bg-white text-zinc-950 font-medium px-6 py-3 rounded-lg hover:bg-zinc-100 transition"
+              className="bg-white text-zinc-950 font-medium px-6 py-3 rounded-lg hover:bg-zinc-100 transition text-center sm:text-left"
             >
               Create your page →
             </Link>
             <Link
               href="/p/vishnu?link=vishnu-conference-dqcs"
-              className="text-sm text-zinc-400 hover:text-white transition"
+              className="text-sm text-zinc-400 hover:text-white transition text-center sm:text-left py-3 sm:py-0"
               target="_blank"
             >
               See an example ↗
@@ -60,7 +60,7 @@ export default function Home() {
       </section>
 
       {/* ── How it works ── */}
-      <section className="max-w-5xl mx-auto px-8 pb-24">
+      <section className="max-w-5xl mx-auto px-4 sm:px-8 pb-16 sm:pb-24">
         <p className="text-xs font-medium text-zinc-500 uppercase tracking-widest mb-10">
           How it works
         </p>
@@ -93,8 +93,8 @@ export default function Home() {
       </section>
 
       {/* ── CTA ── */}
-      <section className="max-w-5xl mx-auto px-8 pb-24">
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-10 text-center">
+      <section className="max-w-5xl mx-auto px-4 sm:px-8 pb-16 sm:pb-24">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 sm:p-10 text-center">
           <h2 className="text-2xl font-semibold mb-3">Ready to stand out?</h2>
           <p className="text-zinc-400 text-sm mb-6">
             Built for people who wear multiple hats and need a different link for every room they walk into.
@@ -109,7 +109,7 @@ export default function Home() {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="border-t border-zinc-800 px-8 py-6 max-w-5xl mx-auto flex items-center justify-between">
+      <footer className="border-t border-zinc-800 px-4 sm:px-8 py-6 max-w-5xl mx-auto flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-xs text-zinc-600">PersonaPage</span>
         <span className="text-xs text-zinc-600">Built for London Tech Week 2026</span>
       </footer>

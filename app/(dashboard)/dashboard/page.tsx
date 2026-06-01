@@ -11,7 +11,7 @@ export default async function DashboardPage() {
     .single()
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 md:p-8">
       <div className="mb-8">
         <h1 className="text-2xl font-semibold text-white">
           {profile?.headline ? 'Welcome back' : 'Welcome'}{profile?.username ? `, ${profile.username}` : ''}
@@ -22,7 +22,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Quick actions */}
-      <div className="grid grid-cols-2 gap-4 max-w-lg">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg">
         <a href="/profile" className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 hover:border-zinc-600 transition">
           <div className="text-white font-medium text-sm mb-1">Edit Profile</div>
           <div className="text-zinc-500 text-xs">Add your bio, skills, projects</div>

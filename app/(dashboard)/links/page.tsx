@@ -27,7 +27,7 @@ export default async function LinksPage({
   const username = profile?.username ?? ''
 
   return (
-    <div className="p-8 max-w-2xl">
+    <div className="p-4 sm:p-6 md:p-8 max-w-2xl">
 
       {/* ── Page Header ── */}
       <div className="mb-8">
@@ -98,14 +98,14 @@ export default async function LinksPage({
         {links?.map((link) => (
           <div key={link.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
 
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
                 <div className="text-white text-sm font-medium">{link.label || link.context}</div>
-                <div className="text-zinc-500 text-xs mt-0.5">
+                <div className="text-zinc-500 text-xs mt-0.5 break-all">
                   /p/{username}?link={link.slug}
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
                 <span className="text-xs text-zinc-600 capitalize">
                   {link.context.replace('_', ' ')}
                 </span>

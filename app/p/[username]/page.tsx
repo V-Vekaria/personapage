@@ -85,14 +85,14 @@ export default async function PublicProfilePage({ params, searchParams }: Props)
       {/* Analytics — invisible component that records this page view */}
       {activeLink && <ViewCapture linkId={activeLink.id} />}
 
-      <div className="max-w-2xl mx-auto px-6 py-16">
+      <div className="max-w-2xl mx-auto px-4 py-10 sm:px-6 sm:py-16">
 
         {/* ── Header: Name + AI headline ── */}
-        <div className="mb-12">
-          <h1 className="text-3xl font-semibold text-white mb-2">
+        <div className="mb-10 sm:mb-12">
+          <h1 className="text-2xl sm:text-3xl font-semibold text-white mb-2 break-words">
             {profile.full_name || username}
           </h1>
-          <p className="text-zinc-300 text-lg leading-relaxed">
+          <p className="text-zinc-300 text-base sm:text-lg leading-relaxed break-words">
             {generatedContent?.headline || profile.headline || 'Building things.'}
           </p>
         </div>
@@ -103,7 +103,7 @@ export default async function PublicProfilePage({ params, searchParams }: Props)
             <h2 className="text-xs font-medium text-zinc-500 uppercase tracking-widest mb-4">
               About
             </h2>
-            <p className="text-zinc-300 leading-relaxed">
+            <p className="text-zinc-300 leading-relaxed break-words">
               {generatedContent?.summary || profile.bio}
             </p>
           </div>
@@ -117,7 +117,7 @@ export default async function PublicProfilePage({ params, searchParams }: Props)
             </h2>
             <div className="space-y-6">
               {projects.map((project: any, i: number) => (
-                <div key={i} className="border border-zinc-800 rounded-xl p-5 bg-zinc-900/50">
+                <div key={i} className="border border-zinc-800 rounded-xl p-4 sm:p-5 bg-zinc-900/50">
                   <h3 className="text-white font-medium mb-1">{project.title}</h3>
                   <p className="text-zinc-400 text-sm leading-relaxed mb-3">{project.description}</p>
                   {/* Tech stack tags */}

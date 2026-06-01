@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { DashboardNavLinks } from '@/components/dashboard/DashboardNavLinks'
+import { MobileNav } from '@/components/dashboard/MobileNav'
 
 async function signOut() {
   'use server'
@@ -19,36 +21,36 @@ export default async function DashboardLayout({
 
   if (!user) redirect('/login')
 
+  const signOutForm = (
+    <form action={signOut} className="px-3">
+      <button type="submit" className="text-xs text-zinc-500 hover:text-red-400 transition">
+        Sign out
+      </button>
+    </form>
+  )
+
   return (
-    <div className="min-h-screen bg-zinc-950 flex">
-      <aside className="w-56 border-r border-zinc-800 flex flex-col px-3 py-6">
+    <div className="min-h-screen bg-zinc-950 flex flex-col md:flex-row">
+      <MobileNav email={user.email ?? ''} signOutForm={signOutForm} />
+
+      <aside className="hidden md:flex w-56 shrink-0 border-r border-zinc-800 flex-col px-3 py-6">
         <div className="px-3 mb-8">
-          <span className="text-white font-semibold text-sm tracking-tight">PersonaPage</span>
+          <Link href="/dashboard" className="text-white font-semibold text-sm tracking-tight">
+            PersonaPage
+          </Link>
         </div>
 
-        <nav className="flex flex-col gap-1 flex-1">
-          <Link href="/dashboard" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition">
-            <span>⬛</span> Dashboard
-          </Link>
-          <Link href="/profile" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition">
-            <span>👤</span> Profile
-          </Link>
-          <Link href="/links" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition">
-            <span>🔗</span> Links
-          </Link>
-        </nav>
+        <div className="flex flex-col gap-1 flex-1">
+          <DashboardNavLinks />
+        </div>
 
         <div className="border-t border-zinc-800 pt-4 px-3 space-y-2">
           <p className="text-xs text-zinc-600 truncate">{user.email}</p>
-          <form action={signOut}>
-            <button type="submit" className="text-xs text-zinc-500 hover:text-red-400 transition">
-              Sign out
-            </button>
-          </form>
+          {signOutForm}
         </div>
       </aside>
 
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 min-w-0 overflow-auto">
         {children}
       </main>
     </div>
