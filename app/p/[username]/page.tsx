@@ -100,14 +100,6 @@ export default async function PublicProfilePage({ params, searchParams }: Props)
         ctaLabel={contact ? connectLabel(contact) : undefined}
       />
 
-      {(generatedContent?.summary || profile.bio) && (
-        <Section title="About">
-          <p className="text-zinc-300 leading-relaxed break-words">
-            {generatedContent?.summary || profile.bio}
-          </p>
-        </Section>
-      )}
-
       {projects.length > 0 && (
         <Section title="Projects">
           <div className="grid gap-4">
