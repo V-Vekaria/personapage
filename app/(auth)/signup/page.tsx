@@ -5,46 +5,45 @@ interface Props {
 }
 
 export default async function SignupPage({ searchParams }: Props) {
-  // Next.js 15 requires awaiting searchParams
   const params = await searchParams
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,rgba(124,58,237,0.18),transparent_34rem),linear-gradient(180deg,#09090b_0%,#181020_48%,#09090b_100%)] flex items-center justify-center px-4 py-10 text-white">
+      <div className="absolute inset-x-4 top-16 h-72 bg-[radial-gradient(ellipse_at_center,rgba(139,92,246,0.18),transparent_68%)] blur-3xl" aria-hidden />
 
-        {/* ── Header ── */}
+      <div className="relative w-full max-w-sm rounded-lg border border-violet-300/15 bg-zinc-950/75 p-5 sm:p-6 shadow-[0_24px_80px_rgba(24,8,45,0.55),0_0_42px_rgba(124,58,237,0.14)] backdrop-blur">
         <div className="mb-8 text-center">
+          <p className="text-xs font-medium text-violet-200/75 uppercase tracking-widest mb-3">
+            PersonaPage
+          </p>
           <h1 className="text-2xl font-semibold text-white tracking-tight">
             Create account
           </h1>
-          <p className="text-zinc-400 text-sm mt-1">Start building your PersonaPage</p>
+          <p className="text-zinc-300 text-sm mt-2">Start building your PersonaPage</p>
         </div>
 
         <form action={signup} className="space-y-4">
-
-          {/* ── Username ── */}
           <div>
-            <label htmlFor="username" className="block text-sm text-zinc-400 mb-1.5">
+            <label htmlFor="username" className="block text-sm text-zinc-300 mb-1.5">
               Username
             </label>
-            <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2.5 focus-within:ring-1 focus-within:ring-zinc-600 focus-within:border-zinc-600 transition">
-              <span className="text-zinc-500 text-sm mr-1">persona.page/</span>
+            <div className="flex items-center bg-zinc-900/80 border border-violet-300/10 rounded-lg px-3 py-2.5 focus-within:ring-1 focus-within:ring-violet-300/35 focus-within:border-violet-300/35 transition">
+              <span className="text-violet-100/55 text-sm mr-1">persona.page/</span>
               <input
                 id="username"
                 name="username"
                 type="text"
                 required
                 autoComplete="username"
-                className="flex-1 bg-transparent text-white text-sm placeholder:text-zinc-600 focus:outline-none"
+                className="min-w-0 flex-1 bg-transparent text-white text-sm placeholder:text-zinc-600 focus:outline-none"
                 placeholder="yourname"
               />
             </div>
-            <p className="text-zinc-600 text-xs mt-1">This is your public URL — choose carefully</p>
+            <p className="text-zinc-500 text-xs mt-1">This is your public URL - choose carefully</p>
           </div>
 
-          {/* ── Email ── */}
           <div>
-            <label htmlFor="email" className="block text-sm text-zinc-400 mb-1.5">
+            <label htmlFor="email" className="block text-sm text-zinc-300 mb-1.5">
               Email
             </label>
             <input
@@ -53,14 +52,13 @@ export default async function SignupPage({ searchParams }: Props) {
               type="email"
               required
               autoComplete="email"
-              className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2.5 text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-600 focus:border-zinc-600 transition"
+              className="w-full bg-zinc-900/80 border border-violet-300/10 text-white rounded-lg px-3 py-2.5 text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-violet-300/35 focus:border-violet-300/35 transition"
               placeholder="you@example.com"
             />
           </div>
 
-          {/* ── Password ── */}
           <div>
-            <label htmlFor="password" className="block text-sm text-zinc-400 mb-1.5">
+            <label htmlFor="password" className="block text-sm text-zinc-300 mb-1.5">
               Password
             </label>
             <input
@@ -69,34 +67,31 @@ export default async function SignupPage({ searchParams }: Props) {
               type="password"
               required
               autoComplete="new-password"
-              className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2.5 text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-600 focus:border-zinc-600 transition"
+              className="w-full bg-zinc-900/80 border border-violet-300/10 text-white rounded-lg px-3 py-2.5 text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-violet-300/35 focus:border-violet-300/35 transition"
               placeholder="Min 8 characters"
             />
           </div>
 
-          {/* ── Error message ── */}
           {params.error && (
-            <div className="px-4 py-3 bg-red-950 border border-red-800 rounded-lg text-red-400 text-sm">
+            <div className="px-4 py-3 bg-red-950/80 border border-red-800/80 rounded-lg text-red-300 text-sm">
               {params.error}
             </div>
           )}
 
-          {/* ── Submit ── */}
           <button
             type="submit"
-            className="w-full bg-white text-zinc-950 font-medium text-sm rounded-lg py-2.5 hover:bg-zinc-100 transition"
+            className="w-full bg-gradient-to-r from-white to-violet-100 text-zinc-950 font-medium text-sm rounded-lg py-2.5 shadow-[0_0_30px_rgba(124,58,237,0.22)] hover:from-white hover:to-fuchsia-100 transition"
           >
             Create account
           </button>
         </form>
 
-        <p className="text-center text-zinc-500 text-sm mt-6">
+        <p className="text-center text-zinc-400 text-sm mt-6">
           Have an account?{' '}
-          <a href="/login" className="text-zinc-300 hover:text-white transition">
+          <a href="/login" className="text-violet-100 hover:text-white transition">
             Sign in
           </a>
         </p>
-
       </div>
     </div>
   )

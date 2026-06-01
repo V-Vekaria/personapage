@@ -58,11 +58,11 @@ export default function ParticleBackground() {
           const dy = nodes[i].y - nodes[j].y
           const dist = Math.sqrt(dx * dx + dy * dy)
           if (dist < MAX_DIST) {
-            const alpha = (1 - dist / MAX_DIST) * 0.12
+            const alpha = (1 - dist / MAX_DIST) * 0.16
             ctx!.beginPath()
             ctx!.moveTo(nodes[i].x, nodes[i].y)
             ctx!.lineTo(nodes[j].x, nodes[j].y)
-            ctx!.strokeStyle = `rgba(255,255,255,${alpha})`
+            ctx!.strokeStyle = `rgba(196,181,253,${alpha})`
             ctx!.lineWidth = 0.8
             ctx!.stroke()
           }
@@ -73,7 +73,7 @@ export default function ParticleBackground() {
       for (const n of nodes) {
         ctx!.beginPath()
         ctx!.arc(n.x, n.y, n.radius, 0, Math.PI * 2)
-        ctx!.fillStyle = 'rgba(255,255,255,0.25)'
+        ctx!.fillStyle = 'rgba(216,180,254,0.32)'
         ctx!.fill()
       }
 
@@ -99,6 +99,7 @@ export default function ParticleBackground() {
   return (
     <canvas
       ref={canvasRef}
+      aria-hidden="true"
       className="absolute inset-0 w-full h-full"
       style={{ pointerEvents: 'none' }}
     />

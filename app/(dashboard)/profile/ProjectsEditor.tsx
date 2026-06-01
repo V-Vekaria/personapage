@@ -31,14 +31,17 @@ export function ProjectsEditor({ initial }: Props) {
     setProjects(prev => prev.map((p, i) => i === index ? { ...p, [field]: value } : p))
   }
 
+  const inputClass =
+    'w-full bg-zinc-950/80 border border-violet-300/10 text-white rounded-lg px-3 py-2 text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-violet-300/35 focus:border-violet-300/35 transition'
+
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <label className="text-sm text-zinc-400">Projects</label>
+        <label className="text-sm text-zinc-300">Projects</label>
         <button
           type="button"
           onClick={addProject}
-          className="text-xs text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 px-3 py-1 rounded-lg transition"
+          className="text-xs text-violet-100 hover:text-white border border-violet-300/20 hover:border-violet-300/40 bg-violet-950/25 px-3 py-1 rounded-lg transition"
         >
           + Add project
         </button>
@@ -46,14 +49,14 @@ export function ProjectsEditor({ initial }: Props) {
 
       <div className="space-y-4">
         {projects.map((project, i) => (
-          <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-3">
+          <div key={i} className="bg-zinc-900/65 border border-violet-300/10 rounded-lg p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-zinc-600">Project {i + 1}</span>
+              <span className="text-xs text-violet-200/70">Project {i + 1}</span>
               {projects.length > 1 && (
                 <button
                   type="button"
                   onClick={() => removeProject(i)}
-                  className="text-xs text-zinc-600 hover:text-red-400 transition"
+                  className="text-xs text-zinc-500 hover:text-red-300 transition"
                 >
                   Remove
                 </button>
@@ -64,7 +67,7 @@ export function ProjectsEditor({ initial }: Props) {
               name="project_title"
               value={project.title}
               onChange={e => update(i, 'title', e.target.value)}
-              className="w-full bg-zinc-950 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-600 transition"
+              className={inputClass}
               placeholder="Project name e.g. PersonaPage"
             />
             <textarea
@@ -72,22 +75,22 @@ export function ProjectsEditor({ initial }: Props) {
               value={project.description}
               onChange={e => update(i, 'description', e.target.value)}
               rows={2}
-              className="w-full bg-zinc-950 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-600 transition resize-none"
+              className={`${inputClass} resize-none`}
               placeholder="What does it do? What problem does it solve?"
             />
             <input
               name="project_tech"
               value={project.tech}
               onChange={e => update(i, 'tech', e.target.value)}
-              className="w-full bg-zinc-950 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-600 transition"
+              className={inputClass}
               placeholder="Tech used e.g. Next.js, Supabase, OpenAI"
             />
           </div>
         ))}
       </div>
 
-      <p className="text-zinc-600 text-xs mt-2">
-        Add all your key projects — the AI uses these to tailor your profile for each context
+      <p className="text-zinc-500 text-xs mt-2">
+        Add all your key projects - the AI uses these to tailor your profile for each context
       </p>
     </div>
   )

@@ -2,6 +2,13 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { ViewCapture } from '@/components/public/ViewCapture'
 import type { Metadata } from 'next'
+import type { ReactNode } from 'react'
+
+type Project = {
+  title: string
+  description: string
+  tech?: string[]
+}
 
 function connectLabel(contact: string): string {
   try {
@@ -27,10 +34,14 @@ interface Props {
   searchParams: Promise<{ link?: string }>
 }
 
+function contactHref(contact: string): string {
+  return contact.startsWith('http') ? contact : 'https://' + contact
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { username } = await params
   return {
-    title: `${username} — PersonaPage`,
+    title: `${username} - PersonaPage`,
     description: `Professional profile for ${username}`,
   }
 }
@@ -38,9 +49,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PublicProfilePage({ params, searchParams }: Props) {
   const { username } = await params
   const { link: slug } = await searchParams
+
   const supabase = createAdminClient()
 
-  // ── 1. Find profile by username ──
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
@@ -49,11 +60,9 @@ export default async function PublicProfilePage({ params, searchParams }: Props)
 
   if (!profile) notFound()
 
-  // ── 2. Load the specific link if slug provided, else fall back to first active link ──
   let activeLink = null
 
   if (slug) {
-    // Visitor came via a shared link — load that link's AI content
     const { data } = await supabase
       .from('links')
       .select('*')
@@ -62,7 +71,6 @@ export default async function PublicProfilePage({ params, searchParams }: Props)
       .single()
     activeLink = data
   } else {
-    // No slug — show default (first active link)
     const { data } = await supabase
       .from('links')
       .select('*')
@@ -74,113 +82,169 @@ export default async function PublicProfilePage({ params, searchParams }: Props)
     activeLink = data
   }
 
-  // ── 3. Parse profile data ──
   const skills: string[] = profile.skills ?? []
-  const projects: any[] = profile.projects ?? []
-  const generatedContent = activeLink?.generated_content // AI-generated content for this link
+  const projects: Project[] = profile.projects ?? []
+  const generatedContent = activeLink?.generated_content
+  const contact = profile.contact as string | null
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
-
-      {/* Analytics — invisible component that records this page view */}
+    <ProfileShell>
       {activeLink && <ViewCapture linkId={activeLink.id} />}
 
-      <div className="max-w-2xl mx-auto px-4 py-10 sm:px-6 sm:py-16">
+      <HeroCard
+        label={slug ? 'Tailored profile' : 'Public profile'}
+        name={profile.full_name || username}
+        headline={generatedContent?.headline || profile.headline || 'Building things.'}
+        intro={generatedContent?.summary || profile.bio}
+        ctaHref={contact ? contactHref(contact) : undefined}
+        ctaLabel={contact ? connectLabel(contact) : undefined}
+      />
 
-        {/* ── Header: Name + AI headline ── */}
-        <div className="mb-10 sm:mb-12">
-          <h1 className="text-2xl sm:text-3xl font-semibold text-white mb-2 break-words">
-            {profile.full_name || username}
-          </h1>
-          <p className="text-zinc-300 text-base sm:text-lg leading-relaxed break-words">
-            {generatedContent?.headline || profile.headline || 'Building things.'}
+      {(generatedContent?.summary || profile.bio) && (
+        <Section title="About">
+          <p className="text-zinc-300 leading-relaxed break-words">
+            {generatedContent?.summary || profile.bio}
           </p>
-        </div>
+        </Section>
+      )}
 
-        {/* ── About: AI summary or raw bio ── */}
-        {(generatedContent?.summary || profile.bio) && (
-          <div className="mb-12">
-            <h2 className="text-xs font-medium text-zinc-500 uppercase tracking-widest mb-4">
-              About
-            </h2>
-            <p className="text-zinc-300 leading-relaxed break-words">
-              {generatedContent?.summary || profile.bio}
-            </p>
+      {projects.length > 0 && (
+        <Section title="Projects">
+          <div className="grid gap-4">
+            {projects.map((project, index) => (
+              <ProjectCard key={`${project.title}-${index}`} project={project} />
+            ))}
           </div>
+        </Section>
+      )}
+
+      {skills.length > 0 && (
+        <Section title="Skills">
+          <TagList items={skills} />
+        </Section>
+      )}
+
+      <Section title="Get in touch">
+        <p className="text-zinc-300 text-sm leading-relaxed mb-4">
+          {generatedContent?.cta_text || 'Open to opportunities and conversations.'}
+        </p>
+        {contact && (
+          <ProfileButton href={contactHref(contact)}>
+            {connectLabel(contact)}
+          </ProfileButton>
         )}
+      </Section>
 
-        {/* ── Projects ── */}
-        {projects.length > 0 && (
-          <div className="mb-12">
-            <h2 className="text-xs font-medium text-zinc-500 uppercase tracking-widest mb-4">
-              Projects
-            </h2>
-            <div className="space-y-6">
-              {projects.map((project: any, i: number) => (
-                <div key={i} className="border border-zinc-800 rounded-xl p-4 sm:p-5 bg-zinc-900/50">
-                  <h3 className="text-white font-medium mb-1">{project.title}</h3>
-                  <p className="text-zinc-400 text-sm leading-relaxed mb-3">{project.description}</p>
-                  {/* Tech stack tags */}
-                  {project.tech && project.tech.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {project.tech.map((t: string, j: number) => (
-                        <span key={j} className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded">
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+      <ProfileFooter />
+    </ProfileShell>
+  )
+}
 
-        {/* ── Skills ── */}
-        {skills.length > 0 && (
-          <div className="mb-12">
-            <h2 className="text-xs font-medium text-zinc-500 uppercase tracking-widest mb-4">
-              Skills
-            </h2>
-            <div className="flex flex-wrap gap-2">
-              {skills.map((skill: string, i: number) => (
-                <span key={i} className="text-sm bg-zinc-900 border border-zinc-800 text-zinc-300 px-3 py-1 rounded-full">
-                  {skill}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── Get in Touch: AI CTA + contact link ── */}
-        <div className="mb-16">
-          <h2 className="text-xs font-medium text-zinc-500 uppercase tracking-widest mb-4">
-            Get in touch
-          </h2>
-          <p className="text-zinc-300 text-sm mb-3">
-            {generatedContent?.cta_text || 'Open to opportunities and conversations.'}
-          </p>
-          {/* Show connect button if user has set a contact URL */}
-          {profile.contact && (
-            <a
-              href={profile.contact.startsWith('http') ? profile.contact : 'https://' + profile.contact}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 px-4 py-2 rounded-lg transition"
-            >
-              {connectLabel(profile.contact)} →
-            </a>
-          )}
-        </div>
-
-        {/* ── Footer: Growth loop ── */}
-        <div className="border-t border-zinc-800 pt-6">
-          <a href="/" className="text-xs text-zinc-600 hover:text-zinc-400 transition">
-            Built with PersonaPage
-          </a>
-        </div>
-
+function ProfileShell({ children }: { children: ReactNode }) {
+  return (
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,rgba(124,58,237,0.18),transparent_34rem),linear-gradient(180deg,#09090b_0%,#181020_48%,#09090b_100%)] text-white">
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-x-4 top-10 h-72 bg-[radial-gradient(ellipse_at_center,rgba(139,92,246,0.2),transparent_68%)] blur-3xl" aria-hidden />
+        <main className="relative z-10 max-w-3xl mx-auto px-4 py-8 sm:px-6 sm:py-14">
+          {children}
+        </main>
       </div>
     </div>
+  )
+}
+
+function HeroCard({
+  label,
+  name,
+  headline,
+  intro,
+  ctaHref,
+  ctaLabel,
+}: {
+  label: string
+  name: string
+  headline: string
+  intro?: string
+  ctaHref?: string
+  ctaLabel?: string
+}) {
+  return (
+    <header className="mb-6 sm:mb-8 rounded-lg border border-violet-300/15 bg-zinc-950/75 p-5 sm:p-7 shadow-[0_24px_80px_rgba(24,8,45,0.55),0_0_42px_rgba(124,58,237,0.14)] backdrop-blur">
+      <div className="mb-5 inline-flex rounded-full border border-violet-300/25 bg-violet-400/10 px-3 py-1 text-xs font-medium text-violet-100">
+        {label}
+      </div>
+      <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white break-words">
+        {name}
+      </h1>
+      <p className="mt-3 text-base sm:text-lg leading-relaxed text-violet-100/90 break-words">
+        {headline}
+      </p>
+      {intro && (
+        <p className="mt-5 max-w-2xl text-sm sm:text-base leading-relaxed text-zinc-300 break-words">
+          {intro}
+        </p>
+      )}
+      {ctaHref && ctaLabel && (
+        <div className="mt-6">
+          <ProfileButton href={ctaHref}>{ctaLabel}</ProfileButton>
+        </div>
+      )}
+    </header>
+  )
+}
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="mb-6 sm:mb-8 rounded-lg border border-violet-300/10 bg-zinc-950/60 p-5 sm:p-6 shadow-[0_0_34px_rgba(124,58,237,0.08)]">
+      <h2 className="text-xs font-medium text-violet-200/75 uppercase tracking-widest mb-4">
+        {title}
+      </h2>
+      {children}
+    </section>
+  )
+}
+
+function ProjectCard({ project }: { project: Project }) {
+  return (
+    <article className="rounded-lg border border-zinc-800/90 bg-zinc-900/65 p-4 sm:p-5 transition hover:border-violet-300/30">
+      <h3 className="text-white font-medium mb-2">{project.title}</h3>
+      <p className="text-zinc-300/85 text-sm leading-relaxed mb-4">{project.description}</p>
+      {project.tech && project.tech.length > 0 && <TagList items={project.tech} />}
+    </article>
+  )
+}
+
+function TagList({ items }: { items: string[] }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.map((item) => (
+        <span key={item} className="text-xs bg-violet-950/40 border border-violet-300/15 text-violet-50/85 px-2.5 py-1 rounded-full">
+          {item}
+        </span>
+      ))}
+    </div>
+  )
+}
+
+function ProfileButton({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-white to-violet-100 px-4 py-2.5 text-sm font-medium text-zinc-950 shadow-[0_0_30px_rgba(124,58,237,0.22)] transition hover:from-white hover:to-fuchsia-100"
+    >
+      {children}
+    </a>
+  )
+}
+
+function ProfileFooter() {
+  return (
+    <footer className="border-t border-violet-300/10 pt-6">
+      <a href="/" className="text-xs text-zinc-500 hover:text-violet-100 transition">
+        Built with PersonaPage
+      </a>
+    </footer>
   )
 }

@@ -15,9 +15,9 @@ export function CopyLinkButton({ username, slug }: { username: string; slug: str
   return (
     <button
       onClick={handleCopy}
-      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 transition"
+      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border border-violet-300/20 bg-violet-950/25 text-violet-100 hover:text-white hover:border-violet-300/40 transition"
     >
-      {copied ? '✓ Copied' : 'Copy Link'}
+      {copied ? 'Copied' : 'Copy Link'}
     </button>
   )
 }

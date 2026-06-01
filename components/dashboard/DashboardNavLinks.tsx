@@ -7,7 +7,7 @@ const links = [
 ] as const
 
 const linkClass =
-  'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition'
+  'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-zinc-300 hover:text-white hover:bg-violet-950/35 hover:ring-1 hover:ring-violet-300/15 transition'
 
 interface Props {
   onNavigate?: () => void
@@ -18,7 +18,7 @@ export function DashboardNavLinks({ onNavigate }: Props) {
     <nav className="flex flex-col gap-1">
       {links.map(({ href, icon, label }) => (
         <Link key={href} href={href} className={linkClass} onClick={onNavigate}>
-          <span>{icon}</span> {label}
+          <span className="text-violet-200/80">{icon}</span> {label}
         </Link>
       ))}
     </nav>
