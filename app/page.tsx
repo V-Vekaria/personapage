@@ -33,17 +33,17 @@ export default function Home() {
             </div>
 
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight leading-tight text-balance mb-6">
-              One profile link.
+              One link for
               <br />
               <span className="bg-gradient-to-r from-violet-100 via-fuchsia-200 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_24px_rgba(167,139,250,0.18)]">
-                Different versions for different people.
+                every room you walk into.
               </span>
             </h1>
 
             <p className="text-zinc-300 text-base sm:text-lg max-w-2xl leading-relaxed mb-10">
-              PersonaPage helps students, builders, freelancers, and early-career professionals create one
-              master profile and generate tailored versions for recruiters, networking contacts,
-              collaborators, or clients.
+              The side project, the client work, the thing you're raising for — you don't
+              pitch them the same way in person, so why does your link? Build one profile,
+              share the version that fits the conversation.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
@@ -59,7 +59,7 @@ export default function Home() {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                View demo profile
+                See a live version
               </Link>
             </div>
           </div>
@@ -122,19 +122,19 @@ export default function Home() {
               step: '01',
               title: 'Build your master profile',
               description:
-                'Add your bio, skills, projects, links, and goals once. This becomes the source profile PersonaPage works from.',
+                'Add your projects, skills, links, and goals once. That\'s the source everything else is generated from — you maintain one thing, not five.',
             },
             {
               step: '02',
-              title: 'Choose the audience',
+              title: 'Pick the room',
               description:
-                'Select the context — recruiter, event contact, collaborator, or client. PersonaPage uses AI to adapt the profile for that audience.',
+                'Recruiter, collaborator, client, investor. Tell PersonaPage who\'s looking and it adapts what you lead with — reordering your work, reframing your bio, surfacing what matters to that person.',
             },
             {
               step: '03',
               title: 'Share the right version',
               description:
-                'Copy the tailored link and send a profile that matches the conversation instead of using the same generic bio everywhere.',
+                'Copy the link and hand over a profile built for the conversation you\'re actually having — not the same generic bio you send everyone.',
             },
           ].map((item) => (
             <div key={item.step} className="bg-zinc-950/70 border border-zinc-800/90 rounded-lg p-6 transition hover:border-violet-300/35 hover:bg-zinc-900/80 hover:shadow-[0_0_34px_rgba(124,58,237,0.13)]">
@@ -150,11 +150,11 @@ export default function Home() {
       <section className="max-w-5xl mx-auto px-4 sm:px-8 pb-16 sm:pb-24">
         <div className="bg-[linear-gradient(135deg,rgba(39,39,42,0.9),rgba(76,29,149,0.24),rgba(24,24,27,0.92))] border border-violet-300/15 rounded-lg p-6 sm:p-10 text-center shadow-[0_0_46px_rgba(124,58,237,0.12)]">
           <h2 className="text-xl sm:text-2xl font-semibold text-balance mb-3">
-            Build one profile. Share the right version.
+            Different room. Different link. Same you.
           </h2>
           <p className="text-zinc-300 text-sm sm:text-base max-w-xl mx-auto mb-6 leading-relaxed">
-            For students, builders, freelancers, and early-career professionals who need a flexible
-            professional profile for different opportunities.
+            Built for people who wear multiple hats and need their profile to keep up —
+            builders shipping side projects, taking client work, and networking all at once.
           </p>
           <Link
             href="/signup"
