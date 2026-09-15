@@ -1,121 +1,292 @@
-'use client'
+import Link from 'next/link'
+import { notFound, redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import { CopyButton } from '@/components/ui/CopyButton'
+import { StatusBanner } from '@/components/ui/StatusBanner'
+import { publicLinkUrl } from '@/lib/site'
+import { isOpenAIConfigured } from '@/lib/ai'
+import { CONTEXTS, CONTEXT_LABELS } from '@/types/database'
+import type { Link as ProfileLink } from '@/types/database'
+import { saveGeneratedContent, toggleLinkActive, updateLinkDetails } from '../actions'
+import { GenerateButton } from './GenerateButton'
+import { DeleteLinkForm } from './DeleteLinkForm'
 
-import { use, useState } from 'react'
-import type { ReactNode } from 'react'
-import { useRouter } from 'next/navigation'
-
-export default function ManageLinkPage({
-  params,
-}: {
+interface Props {
   params: Promise<{ id: string }>
-}) {
-  const { id } = use(params)
-  const [loading, setLoading] = useState(false)
-  const [content, setContent] = useState<any>(null)
-  const [error, setError] = useState('')
-  const router = useRouter()
+  searchParams: Promise<{ success?: string; error?: string }>
+}
 
-  async function generate() {
-    setLoading(true)
-    setError('')
-    try {
-      const res = await fetch('/api/ai/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ link_id: id }),
-      })
-      const data = await res.json()
-      if (data.error) {
-        setError(data.error)
-      } else {
-        setContent(data.content)
-      }
-    } catch {
-      setError('Something went wrong')
-    } finally {
-      setLoading(false)
-    }
-  }
+const inputClass =
+  'w-full rounded-lg border border-violet-300/10 bg-zinc-900/80 px-3 py-2.5 text-sm text-white transition placeholder:text-zinc-600 focus:border-violet-300/35 focus:outline-none focus:ring-1 focus:ring-violet-300/35'
+const labelClass = 'mb-1.5 block text-sm text-zinc-300'
+const cardClass =
+  'rounded-lg border border-violet-300/10 bg-zinc-950/60 p-5 shadow-[0_0_34px_rgba(124,58,237,0.08)] sm:p-6'
+
+export default async function ManageLinkPage({ params, searchParams }: Props) {
+  const { id } = await params
+  const { success, error } = await searchParams
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { data: link } = await supabase
+    .from('links')
+    .select('*')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single<ProfileLink>()
+
+  if (!link) notFound()
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('username')
+    .eq('id', user.id)
+    .single()
+
+  const username = profile?.username ?? ''
+  const url = username ? publicLinkUrl(username, link.slug) : ''
+  const content = link.generated_content
+  const viewCount = await countViews(id)
 
   return (
-    <div className="relative z-10 p-4 sm:p-6 md:p-8 max-w-3xl">
-      <div className="mb-8 rounded-lg border border-violet-300/15 bg-zinc-950/65 p-5 sm:p-6 shadow-[0_0_42px_rgba(124,58,237,0.1)] backdrop-blur">
-        <button
-          onClick={() => router.back()}
-          className="text-violet-100/80 hover:text-white text-sm transition mb-4"
-        >
-          Back
-        </button>
-        <p className="text-xs font-medium text-violet-200/75 uppercase tracking-widest mb-3">
-          Links
-        </p>
-        <h1 className="text-2xl font-semibold text-white">Manage Link</h1>
-      </div>
+    <div className="relative z-10 max-w-3xl p-4 sm:p-6 md:p-8">
+      <header className="mb-8 rounded-lg border border-violet-300/15 bg-zinc-950/65 p-5 shadow-[0_0_42px_rgba(124,58,237,0.1)] backdrop-blur sm:p-6">
+        <Link href="/links" className="mb-4 inline-block text-sm text-violet-100/80 transition hover:text-white">
+          ← All links
+        </Link>
 
-      <button
-        onClick={generate}
-        disabled={loading}
-        className="bg-gradient-to-r from-white to-violet-100 text-zinc-950 font-medium text-sm rounded-lg px-5 py-2.5 shadow-[0_0_30px_rgba(124,58,237,0.22)] hover:from-white hover:to-fuchsia-100 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-      >
-        {loading && (
-          <svg className="animate-spin h-4 w-4 text-zinc-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
-        )}
-        {loading ? 'Generating...' : 'Generate with AI'}
-      </button>
-
-      {error && (
-        <p className="text-red-300 text-sm mt-4 rounded-lg border border-red-800/80 bg-red-950/80 px-4 py-3">{error}</p>
-      )}
-
-      {!loading && !content && !error && (
-        <p className="text-zinc-400 text-sm mt-4 rounded-lg border border-violet-300/10 bg-zinc-950/50 px-4 py-3">
-          Click "Generate with AI" to create a tailored profile for this link's audience.
-        </p>
-      )}
-
-      {loading && !content && (
-        <div className="mt-8 space-y-6 animate-pulse">
-          {[['Headline', 'h-5 w-3/4'], ['Summary', 'h-16 w-full'], ['Skills', 'h-8 w-1/2'], ['Call to Action', 'h-5 w-2/3']].map(([label, size]) => (
-            <div key={label} className="bg-zinc-950/60 border border-violet-300/10 rounded-lg p-6">
-              <div className="text-xs text-violet-200/60 uppercase tracking-wide mb-3">{label}</div>
-              <div className={`bg-zinc-800 rounded ${size}`} />
-            </div>
-          ))}
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="mb-2 text-xs font-medium uppercase tracking-widest text-violet-200/75">
+              {CONTEXT_LABELS[link.context] ?? link.context}
+            </p>
+            <h1 className="text-2xl font-semibold text-white">
+              {link.label || CONTEXT_LABELS[link.context] || 'Untitled link'}
+            </h1>
+          </div>
+          <span
+            className={`rounded-full border px-2.5 py-1 text-xs ${
+              link.is_active
+                ? 'border-emerald-500/30 bg-emerald-950/40 text-emerald-300'
+                : 'border-zinc-700 bg-zinc-900 text-zinc-400'
+            }`}
+          >
+            {link.is_active ? 'Live' : 'Paused'}
+          </span>
         </div>
-      )}
 
-      {content && (
-        <div className="mt-8 space-y-6">
-          <PreviewCard title="Headline">
-            <p className="text-white font-medium">{content.headline}</p>
-          </PreviewCard>
-          <PreviewCard title="Summary">
-            <p className="text-zinc-300 text-sm leading-relaxed">{content.summary}</p>
-          </PreviewCard>
-          <PreviewCard title="Skills">
+        <p className="mt-3 text-sm text-zinc-400">
+          {viewCount === null
+            ? 'Views unavailable'
+            : `${viewCount} ${viewCount === 1 ? 'view' : 'views'} so far`}
+        </p>
+
+        <StatusBanner success={success} error={error} />
+      </header>
+
+      {/* Public URL --------------------------------------------------------- */}
+      <section className={`${cardClass} mb-6`}>
+        <h2 className="mb-3 text-xs font-medium uppercase tracking-widest text-violet-200/70">
+          Public URL
+        </h2>
+        {url ? (
+          <>
+            <p className="mb-4 break-all rounded-lg border border-zinc-800 bg-zinc-950/80 px-3 py-2.5 font-mono text-xs text-zinc-300">
+              {url}
+            </p>
             <div className="flex flex-wrap gap-2">
-              {content.skills?.map((s: string) => (
-                <span key={s} className="bg-violet-950/40 border border-violet-300/15 text-violet-50/85 text-xs px-2.5 py-1 rounded-full">{s}</span>
-              ))}
+              <CopyButton value={url} />
+              <a
+                href={`/p/${username}?link=${link.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center rounded-md border border-violet-300/20 bg-violet-950/25 px-3 py-1.5 text-xs text-violet-100 transition hover:border-violet-300/40 hover:text-white"
+              >
+                Open page
+              </a>
             </div>
-          </PreviewCard>
-          <PreviewCard title="Call to Action">
-            <p className="text-zinc-300 text-sm">{content.cta_text}</p>
-          </PreviewCard>
+            {!content && (
+              <p className="mt-4 text-xs leading-relaxed text-yellow-200/80">
+                This URL works already, but it will show your raw profile until you generate
+                tailored content below.
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="text-sm text-yellow-200/85">
+            Add a username on your <Link href="/profile" className="underline">profile</Link> to
+            get a public URL.
+          </p>
+        )}
+      </section>
+
+      {/* Tailored content --------------------------------------------------- */}
+      <section className={`${cardClass} mb-6`}>
+        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-xs font-medium uppercase tracking-widest text-violet-200/70">
+            Tailored content
+          </h2>
+          {!isOpenAIConfigured() && (
+            <span className="text-xs text-zinc-500">No OPENAI_API_KEY — using template writer</span>
+          )}
         </div>
-      )}
+
+        <p className="mb-5 text-sm leading-relaxed text-zinc-400">
+          Written for {CONTEXT_LABELS[link.context]?.toLowerCase() ?? 'this audience'}. Generate a
+          draft, then edit it by hand — what you save here is exactly what visitors see.
+        </p>
+
+        <GenerateButton linkId={link.id} hasContent={Boolean(content)} />
+
+        <form
+          action={saveGeneratedContent}
+          // Re-key on the content so a regeneration resets these inputs
+          // instead of leaving stale values in an uncontrolled form.
+          key={JSON.stringify(content)}
+          className="mt-6 space-y-5 border-t border-violet-300/10 pt-6"
+        >
+          <input type="hidden" name="link_id" value={link.id} />
+
+          <div>
+            <label className={labelClass} htmlFor="headline">Headline</label>
+            <input
+              id="headline"
+              name="headline"
+              defaultValue={content?.headline ?? ''}
+              className={inputClass}
+              placeholder="Generate a draft, or write your own"
+              required
+            />
+          </div>
+
+          <div>
+            <label className={labelClass} htmlFor="summary">Summary</label>
+            <textarea
+              id="summary"
+              name="summary"
+              rows={4}
+              defaultValue={content?.summary ?? ''}
+              className={`${inputClass} resize-none`}
+              placeholder="Two or three sentences aimed at this audience"
+              required
+            />
+          </div>
+
+          <div>
+            <label className={labelClass} htmlFor="skills">Skills shown</label>
+            <input
+              id="skills"
+              name="skills"
+              defaultValue={content?.skills?.join(', ') ?? ''}
+              className={inputClass}
+              placeholder="Comma separated, most relevant first"
+            />
+            <p className="mt-1 text-xs text-zinc-500">
+              Ordered for this audience. Leave blank to fall back to your full profile list.
+            </p>
+          </div>
+
+          <div>
+            <label className={labelClass} htmlFor="cta_text">Call to action</label>
+            <input
+              id="cta_text"
+              name="cta_text"
+              defaultValue={content?.cta_text ?? ''}
+              className={inputClass}
+              placeholder="One sentence — what should they do next?"
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="rounded-lg bg-gradient-to-r from-white to-violet-100 px-5 py-2.5 text-sm font-medium text-zinc-950 shadow-[0_0_30px_rgba(124,58,237,0.22)] transition hover:from-white hover:to-fuchsia-100"
+          >
+            Save content
+          </button>
+        </form>
+      </section>
+
+      {/* Details ------------------------------------------------------------ */}
+      <section className={`${cardClass} mb-6`}>
+        <h2 className="mb-4 text-xs font-medium uppercase tracking-widest text-violet-200/70">
+          Details
+        </h2>
+        <form action={updateLinkDetails} className="space-y-4">
+          <input type="hidden" name="link_id" value={link.id} />
+
+          <div>
+            <label className={labelClass} htmlFor="label">Label</label>
+            <input
+              id="label"
+              name="label"
+              defaultValue={link.label}
+              className={inputClass}
+              placeholder="e.g. Google SWE application"
+            />
+            <p className="mt-1 text-xs text-zinc-500">Only you see this — it keeps your list readable.</p>
+          </div>
+
+          <div>
+            <label className={labelClass} htmlFor="context">Audience</label>
+            <select id="context" name="context" defaultValue={link.context} className={inputClass}>
+              {CONTEXTS.map((value) => (
+                <option key={value} value={value}>
+                  {CONTEXT_LABELS[value]}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-zinc-500">
+              Changing this does not rewrite existing content — regenerate to apply it.
+            </p>
+          </div>
+
+          <button
+            type="submit"
+            className="rounded-lg border border-violet-300/25 bg-violet-950/30 px-5 py-2.5 text-sm text-violet-100 transition hover:border-violet-300/45 hover:text-white"
+          >
+            Save details
+          </button>
+        </form>
+      </section>
+
+      {/* Danger zone -------------------------------------------------------- */}
+      <section className="rounded-lg border border-zinc-800/90 bg-zinc-950/50 p-5 sm:p-6">
+        <h2 className="mb-4 text-xs font-medium uppercase tracking-widest text-zinc-500">
+          Link status
+        </h2>
+        <div className="flex flex-wrap items-center gap-3">
+          <form action={toggleLinkActive}>
+            <input type="hidden" name="link_id" value={link.id} />
+            <input type="hidden" name="is_active" value={String(!link.is_active)} />
+            <button
+              type="submit"
+              className="rounded-lg border border-zinc-700 bg-zinc-900/60 px-4 py-2 text-sm text-zinc-300 transition hover:border-violet-300/35 hover:text-white"
+            >
+              {link.is_active ? 'Pause this link' : 'Make it live again'}
+            </button>
+          </form>
+          <DeleteLinkForm linkId={link.id} label={link.label || CONTEXT_LABELS[link.context]} />
+        </div>
+        <p className="mt-3 text-xs leading-relaxed text-zinc-500">
+          Pausing keeps the link and its history but stops it being picked as your default page.
+        </p>
+      </section>
     </div>
   )
 }
 
-function PreviewCard({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <div className="bg-zinc-950/60 border border-violet-300/10 rounded-lg p-6 shadow-[0_0_28px_rgba(124,58,237,0.08)]">
-      <h2 className="text-xs text-violet-200/70 uppercase tracking-wide mb-2">{title}</h2>
-      {children}
-    </div>
-  )
+/** Returns null rather than 0 when the count cannot be read, so the UI can say so. */
+async function countViews(linkId: string): Promise<number | null> {
+  const supabase = await createClient()
+  const { count, error } = await supabase
+    .from('link_views')
+    .select('id', { count: 'exact', head: true })
+    .eq('link_id', linkId)
+
+  return error ? null : (count ?? 0)
 }
