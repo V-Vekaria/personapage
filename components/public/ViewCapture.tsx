@@ -2,6 +2,13 @@
 
 import { useEffect, useRef } from 'react'
 
+/**
+ * Reports one view of a public profile.
+ *
+ * Fire-and-forget by design: analytics must never delay or break the page it is
+ * measuring, so every failure is swallowed. The ref guards against React strict
+ * mode running effects twice in development.
+ */
 export function ViewCapture({ linkId }: { linkId: string }) {
   const fired = useRef(false)
 
@@ -17,8 +24,8 @@ export function ViewCapture({ linkId }: { linkId: string }) {
         referrer: document.referrer || null,
         device: window.innerWidth < 768 ? 'mobile' : 'desktop',
       }),
+      keepalive: true,
     }).catch(() => {})
-    // Never block the page if analytics fails
   }, [linkId])
 
   return null
