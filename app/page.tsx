@@ -48,18 +48,16 @@ export default function Home() {
 
             <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
               <Link
-                href="/signup"
+                href="/try"
                 className="w-full sm:w-auto bg-gradient-to-r from-white to-violet-100 text-zinc-950 font-medium px-6 py-3 rounded-lg hover:from-white hover:to-fuchsia-100 transition text-center shadow-[0_0_30px_rgba(124,58,237,0.24)] hover:shadow-[0_0_38px_rgba(124,58,237,0.36)]"
               >
-                Create your page
+                Try it — no account
               </Link>
               <Link
-                href="/p/vishnu?link=vishnu-conference-dqcs"
+                href="/try"
                 className="inline-flex w-full sm:w-auto items-center justify-center text-sm text-violet-100 bg-violet-950/35 border border-violet-400/25 px-6 py-3 rounded-lg hover:bg-violet-900/45 hover:border-violet-300/40 hover:text-white transition"
-                target="_blank"
-                rel="noopener noreferrer"
               >
-                See a live version
+                Try it without signing up
               </Link>
             </div>
           </div>

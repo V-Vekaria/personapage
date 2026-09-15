@@ -6,11 +6,55 @@ import {
   emailSchema,
   passwordSchema,
   RESERVED_USERNAMES,
+  storedDraftSchema,
   usernameSchema,
 } from '@/lib/validation'
 
 function bail(message: string): never {
   redirect(`/signup?error=${encodeURIComponent(message)}`)
+}
+
+function csv(value: string, max: number): string[] {
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, max)
+}
+
+/**
+ * Turns the /try draft into profile columns.
+ *
+ * The draft comes from the browser, so it is parsed and capped like any other
+ * untrusted input. A draft that fails to parse is dropped silently — losing a
+ * prefill is a far better outcome than failing the signup over it.
+ */
+function profileFromDraft(raw: FormDataEntryValue | null): Record<string, unknown> {
+  if (typeof raw !== 'string' || !raw || raw.length > 8000) return {}
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    return {}
+  }
+
+  const draft = storedDraftSchema.safeParse(parsed)
+  if (!draft.success) return {}
+
+  const { full_name, headline, bio, skills, tone, project } = draft.data
+  const projects = project.title
+    ? [{ title: project.title, description: project.description, tech: csv(project.tech, 10) }]
+    : []
+
+  return {
+    ...(full_name ? { full_name } : {}),
+    ...(headline ? { headline } : {}),
+    ...(bio ? { bio } : {}),
+    ...(skills ? { skills: csv(skills, 30) } : {}),
+    ...(projects.length ? { projects } : {}),
+    tone,
+  }
 }
 
 export async function signup(formData: FormData) {
@@ -52,6 +96,7 @@ export async function signup(formData: FormData) {
   const { error: profileError } = await admin.from('profiles').insert({
     id: data.user.id,
     username: username.data,
+    ...profileFromDraft(formData.get('draft')),
   })
 
   if (profileError) {

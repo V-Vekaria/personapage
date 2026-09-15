@@ -19,6 +19,55 @@ export const viewRequestSchema = z.object({
   device: z.enum(['mobile', 'desktop']).nullish(),
 })
 
+/**
+ * A profile typed by someone who has not signed up.
+ *
+ * Every field is hard-capped. This payload goes straight into a model prompt,
+ * so without caps the endpoint would be a free LLM proxy for anyone willing to
+ * paste a few thousand words into a "bio" field. The caps are generous for a
+ * real profile and useless for anything else.
+ */
+export const trialProjectSchema = z.object({
+  title: z.string().trim().max(120).default(''),
+  description: z.string().trim().max(400).default(''),
+  tech: z.array(z.string().trim().min(1).max(40)).max(10).default([]),
+})
+
+export const trialDraftSchema = z.object({
+  full_name: z.string().trim().max(80).default(''),
+  headline: z.string().trim().max(160).default(''),
+  bio: z.string().trim().max(900).default(''),
+  skills: z.array(z.string().trim().min(1).max(40)).max(15).default([]),
+  projects: z.array(trialProjectSchema).max(3).default([]),
+  tone: z.enum(TONES).default('neutral'),
+})
+
+export const trialRequestSchema = z.object({
+  draft: trialDraftSchema,
+  context: z.enum(CONTEXTS),
+})
+
+export type TrialDraft = z.infer<typeof trialDraftSchema>
+
+/**
+ * The /try draft as the browser stores it, where skills and tech are still the
+ * raw comma-separated strings the user typed.
+ */
+export const storedDraftSchema = z.object({
+  full_name: z.string().trim().max(80).default(''),
+  headline: z.string().trim().max(160).default(''),
+  bio: z.string().trim().max(900).default(''),
+  skills: z.string().max(600).default(''),
+  tone: z.enum(TONES).default('neutral'),
+  project: z
+    .object({
+      title: z.string().trim().max(120).default(''),
+      description: z.string().trim().max(400).default(''),
+      tech: z.string().max(300).default(''),
+    })
+    .default({ title: '', description: '', tech: '' }),
+})
+
 export const contextSchema = z.enum(CONTEXTS)
 export const toneSchema = z.enum(TONES)
 
