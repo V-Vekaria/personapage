@@ -68,6 +68,25 @@ export const storedDraftSchema = z.object({
     .default({ title: '', description: '', tech: '' }),
 })
 
+/**
+ * A link's target: who it is going to, and the posting it should be written
+ * against.
+ *
+ * The description cap is generous for a real job posting and far short of what
+ * would make this an interesting way to push arbitrary text into a model. The
+ * database enforces the same ceiling independently.
+ */
+export const linkTargetSchema = z.object({
+  recipient: z.string().trim().max(160).default(''),
+  source_url: z
+    .union([z.url(), z.literal('')])
+    .optional()
+    .transform((value) => value || null),
+  description: z.string().trim().max(12000).default(''),
+})
+
+export type LinkTargetInput = z.infer<typeof linkTargetSchema>
+
 export const contextSchema = z.enum(CONTEXTS)
 export const toneSchema = z.enum(TONES)
 

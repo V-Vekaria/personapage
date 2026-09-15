@@ -4,8 +4,9 @@ import { CopyButton } from '@/components/ui/CopyButton'
 import { StatusBanner } from '@/components/ui/StatusBanner'
 import { publicLinkUrl } from '@/lib/site'
 import { CONTEXTS, CONTEXT_LABELS } from '@/types/database'
-import type { Link as ProfileLink } from '@/types/database'
+import type { Link as ProfileLink, LinkTarget } from '@/types/database'
 import { createLink } from './actions'
+import { TargetFields } from './TargetFields'
 
 const inputClass =
   'w-full rounded-lg border border-violet-300/10 bg-zinc-900/80 px-3 py-2.5 text-sm text-white transition placeholder:text-zinc-600 focus:border-violet-300/35 focus:outline-none focus:ring-1 focus:ring-violet-300/35'
@@ -33,6 +34,17 @@ export default async function LinksPage({
     .eq('user_id', user!.id)
     .order('created_at', { ascending: false })
     .returns<ProfileLink[]>()
+
+  // One query for all targets rather than one per link.
+  const { data: targets } = await supabase
+    .from('link_targets')
+    .select('link_id, recipient')
+    .in('link_id', (links ?? []).map((l) => l.id))
+    .returns<Pick<LinkTarget, 'link_id' | 'recipient'>[]>()
+
+  const recipientByLink = new Map(
+    (targets ?? []).filter((t) => t.recipient).map((t) => [t.link_id, t.recipient])
+  )
 
   const username = profile?.username ?? ''
 
@@ -78,7 +90,12 @@ export default async function LinksPage({
               Label <span className="text-zinc-500">(optional)</span>
             </label>
             <input id="label" name="label" className={inputClass} placeholder="e.g. Google SWE application" />
+            <p className="mt-1 text-xs text-zinc-500">
+              Defaults to whoever you aim it at below.
+            </p>
           </div>
+
+          <TargetFields />
         </div>
         <button
           type="submit"
@@ -112,6 +129,12 @@ export default async function LinksPage({
                     </span>
                   )}
                 </div>
+                {recipientByLink.get(link.id) &&
+                  recipientByLink.get(link.id) !== link.label && (
+                    <p className="mt-1 text-xs text-violet-100/70">
+                      Aimed at {recipientByLink.get(link.id)}
+                    </p>
+                  )}
                 <p className="mt-1 break-all font-mono text-xs text-zinc-500">
                   /p/{username}?link={link.slug}
                 </p>

@@ -26,13 +26,18 @@ async function loadProfilePage(username: string, slug?: string) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('*')
+    .select('id, username, full_name, contact, headline, bio, skills, projects, tone, created_at, updated_at')
     .ilike('username', username)
     .maybeSingle<Profile>()
 
   if (!profile) return null
 
-  const query = supabase.from('links').select('*').eq('user_id', profile.id)
+  // Explicit columns, never '*'. The public path must not be one refactor away
+  // from serving a pasted job description to the internet.
+  const query = supabase
+    .from('links')
+    .select('id, user_id, context, label, slug, generated_content, is_active, created_at, updated_at')
+    .eq('user_id', profile.id)
 
   const { data: link } = slug
     ? await query.eq('slug', slug).maybeSingle<ProfileLink>()

@@ -106,12 +106,13 @@ the tracking is what makes anyone return.
 
 In order, most valuable first:
 
-1. **Per-recipient links.** One link per company or person, not per abstract
-   category. Label it, send it, track it. This is the unit change described
-   above and everything else gets better once it lands.
-2. **Generate from a job description.** Paste the posting; the page is written
-   against it. Grounding stays the same — never invent, only reorder and
-   reframe.
+1. ~~**Per-recipient links.**~~ **Built.** A link can now be aimed at one
+   company or person rather than an abstract category, and analytics labels
+   each row by recipient.
+2. ~~**Generate from a job description.**~~ **Built.** Paste the posting and the
+   page is written against it. Grounding did not move: the posting controls
+   emphasis, never claims, and the source text is stored in a table with no
+   public policy so it can never reach the profile page.
 3. **Analytics worth opening the app for.** Repeat opens, first-open time
    relative to when you sent it, time on page. Currently it counts views, which
    is the floor, not the product.

@@ -1,4 +1,5 @@
 import { CONTEXT_CONFIG } from './context-config'
+import { renderTargetSection, type GenerationTarget } from './target'
 import type { Context, Profile, Project } from '@/types/database'
 
 /** Renders projects as a readable block so the model can cite specific work. */
@@ -25,9 +26,14 @@ function toneInstruction(tone: string): string {
   return 'balanced — clear but not stiff'
 }
 
-export function buildPrompt(profile: Profile, context: Context): string {
+export function buildPrompt(
+  profile: Profile,
+  context: Context,
+  target?: GenerationTarget | null
+): string {
   const name = profile.full_name || profile.username
   const config = CONTEXT_CONFIG[context] ?? CONTEXT_CONFIG.general
+  const targetSection = target ? renderTargetSection(target) : ''
 
   return `You are writing a professional profile page for ${name}.
 
@@ -45,6 +51,7 @@ Tone preference: ${profile.tone ?? 'neutral'}
 
 Projects:
 ${projectBlock(profile.projects ?? [])}
+${targetSection}
 
 RULES:
 - Never invent metrics, companies, technologies, or claims not present above

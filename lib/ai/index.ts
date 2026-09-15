@@ -2,6 +2,7 @@ import OpenAI from 'openai'
 import { generatedContentSchema } from '@/lib/validation'
 import { generateFallbackContent } from './fallback'
 import { buildPrompt, SYSTEM_PROMPT } from './prompt'
+import type { GenerationTarget } from './target'
 import type { Context, GeneratedContent, Profile } from '@/types/database'
 
 export type GenerationSource = 'openai' | 'fallback'
@@ -37,10 +38,11 @@ export function isOpenAIConfigured(): boolean {
  */
 export async function generateProfileContent(
   profile: Profile,
-  context: Context
+  context: Context,
+  target?: GenerationTarget | null
 ): Promise<GenerationResult> {
   if (!isOpenAIConfigured()) {
-    return { content: generateFallbackContent(profile, context), source: 'fallback' }
+    return { content: generateFallbackContent(profile, context, target), source: 'fallback' }
   }
 
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
@@ -54,7 +56,7 @@ export async function generateProfileContent(
       temperature: 0.7,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: buildPrompt(profile, context) },
+        { role: 'user', content: buildPrompt(profile, context, target) },
       ],
     })
     raw = completion.choices[0]?.message?.content ?? ''
@@ -93,3 +95,5 @@ export async function generateProfileContent(
 export { generateFallbackContent } from './fallback'
 export { buildPrompt } from './prompt'
 export { CONTEXT_CONFIG } from './context-config'
+export { rankSkillsAgainstTarget, toGenerationTarget } from './target'
+export type { GenerationTarget } from './target'

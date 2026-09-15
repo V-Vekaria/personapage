@@ -24,14 +24,14 @@ export default async function Image({ params }: { params: { username: string } }
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('*')
+    .select('id, username, full_name, contact, headline, bio, skills, projects, tone, created_at, updated_at')
     .ilike('username', params.username)
     .maybeSingle<Profile>()
 
   const { data: link } = profile
     ? await supabase
         .from('links')
-        .select('*')
+        .select('id, user_id, context, label, slug, generated_content, is_active, created_at, updated_at')
         .eq('user_id', profile.id)
         .eq('is_active', true)
         .order('created_at', { ascending: true })

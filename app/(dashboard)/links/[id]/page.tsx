@@ -6,8 +6,9 @@ import { StatusBanner } from '@/components/ui/StatusBanner'
 import { publicLinkUrl } from '@/lib/site'
 import { isOpenAIConfigured } from '@/lib/ai'
 import { CONTEXTS, CONTEXT_LABELS } from '@/types/database'
-import type { Link as ProfileLink } from '@/types/database'
-import { saveGeneratedContent, toggleLinkActive, updateLinkDetails } from '../actions'
+import type { Link as ProfileLink, LinkTarget } from '@/types/database'
+import { saveGeneratedContent, saveLinkTarget, toggleLinkActive, updateLinkDetails } from '../actions'
+import { TargetFields } from '../TargetFields'
 import { GenerateButton } from './GenerateButton'
 import { DeleteLinkForm } from './DeleteLinkForm'
 
@@ -47,6 +48,13 @@ export default async function ManageLinkPage({ params, searchParams }: Props) {
     .eq('id', user.id)
     .single()
 
+  // Only the owner can read this row — it has no public policy at all.
+  const { data: target } = await supabase
+    .from('link_targets')
+    .select('*')
+    .eq('link_id', link.id)
+    .maybeSingle<LinkTarget>()
+
   const username = profile?.username ?? ''
   const url = username ? publicLinkUrl(username, link.slug) : ''
   const content = link.generated_content
@@ -79,10 +87,22 @@ export default async function ManageLinkPage({ params, searchParams }: Props) {
           </span>
         </div>
 
+        {target?.recipient && (
+          <p className="mt-2 text-sm text-violet-100/80">
+            Aimed at <span className="text-white">{target.recipient}</span>
+            {target.description && (
+              <span className="text-zinc-500"> · written against the posting</span>
+            )}
+          </p>
+        )}
+
         <p className="mt-3 text-sm text-zinc-400">
           {viewCount === null
             ? 'Views unavailable'
             : `${viewCount} ${viewCount === 1 ? 'view' : 'views'} so far`}
+          {target?.recipient && viewCount !== null && viewCount > 0 && (
+            <span> — {target.recipient.split('—')[0]?.trim() || 'they'} opened it</span>
+          )}
         </p>
 
         <StatusBanner success={success} error={error} />
@@ -136,8 +156,9 @@ export default async function ManageLinkPage({ params, searchParams }: Props) {
         </div>
 
         <p className="mb-5 text-sm leading-relaxed text-zinc-400">
-          Written for {CONTEXT_LABELS[link.context]?.toLowerCase() ?? 'this audience'}. Generate a
-          draft, then edit it by hand — what you save here is exactly what visitors see.
+          {target?.description
+            ? `Written against the posting below, for ${target.recipient || 'this recipient'}. Your facts get reordered to lead with what it asks for — nothing is added.`
+            : `Written for ${CONTEXT_LABELS[link.context]?.toLowerCase() ?? 'this audience'}. Generate a draft, then edit it by hand — what you save here is exactly what visitors see.`}
         </p>
 
         <GenerateButton linkId={link.id} hasContent={Boolean(content)} />
@@ -209,6 +230,52 @@ export default async function ManageLinkPage({ params, searchParams }: Props) {
             Save content
           </button>
         </form>
+      </section>
+
+      {/* Target -------------------------------------------------------------- */}
+      <section className={`${cardClass} mb-6`}>
+        <h2 className="mb-1 text-xs font-medium uppercase tracking-widest text-violet-200/70">
+          Aimed at
+        </h2>
+        <p className="mb-5 text-sm leading-relaxed text-zinc-400">
+          Point this link at one company or person. Paste their posting and the next generation is
+          written against it instead of a generic audience.
+        </p>
+
+        <form action={saveLinkTarget} className="space-y-4">
+          <input type="hidden" name="link_id" value={link.id} />
+          <TargetFields
+            defaultRecipient={target?.recipient ?? ''}
+            defaultSourceUrl={target?.source_url ?? ''}
+            defaultDescription={target?.description ?? ''}
+          />
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="submit"
+              className="rounded-lg border border-violet-300/25 bg-violet-950/30 px-5 py-2.5 text-sm text-violet-100 transition hover:border-violet-300/45 hover:text-white"
+            >
+              Save target
+            </button>
+            {target && (
+              <span className="text-xs text-zinc-500">
+                Clearing both fields removes the target.
+              </span>
+            )}
+          </div>
+        </form>
+
+        {target?.source_url && (
+          <p className="mt-4 border-t border-violet-300/10 pt-4 text-xs">
+            <a
+              href={target.source_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-violet-100/80 transition hover:text-white"
+            >
+              Open the original posting ↗
+            </a>
+          </p>
+        )}
       </section>
 
       {/* Details ------------------------------------------------------------ */}

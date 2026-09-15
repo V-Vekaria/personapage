@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { generateProfileContent, GenerationError, isOpenAIConfigured } from '@/lib/ai'
+import {
+  generateProfileContent,
+  GenerationError,
+  isOpenAIConfigured,
+  toGenerationTarget,
+} from '@/lib/ai'
 import { rateLimit } from '@/lib/rate-limit'
 import { generateRequestSchema } from '@/lib/validation'
 import { isContext } from '@/types/database'
-import type { Link, Profile } from '@/types/database'
+import type { Link, LinkTarget, Profile } from '@/types/database'
 
 /** Generations allowed per user per hour. Each one costs real money. */
 const LIMIT = 20
@@ -72,9 +77,19 @@ export async function POST(req: Request) {
 
   const context = isContext(link.context) ? link.context : 'general'
 
+  // RLS keeps this to targets on links this user owns, so a missing row means
+  // "no target set", not "not allowed to see it".
+  const { data: targetRow } = await supabase
+    .from('link_targets')
+    .select('*')
+    .eq('link_id', link.id)
+    .maybeSingle<LinkTarget>()
+
+  const target = toGenerationTarget(targetRow)
+
   let result
   try {
-    result = await generateProfileContent(profile, context)
+    result = await generateProfileContent(profile, context, target)
   } catch (error) {
     if (error instanceof GenerationError) {
       console.error(`Generation failed (${error.code}):`, error.message)
@@ -103,6 +118,7 @@ export async function POST(req: Request) {
   return NextResponse.json({
     content: result.content,
     source: result.source,
+    targeted: Boolean(target),
     ai_configured: isOpenAIConfigured(),
     remaining: limit.remaining,
   })

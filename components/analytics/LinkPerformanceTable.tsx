@@ -7,13 +7,22 @@ import type { LinkStats } from '@/lib/analytics'
  * row, sortable by eye, and every number readable exactly. The inline bar is a
  * reading aid on top of the number, not a replacement for it.
  */
-export function LinkPerformanceTable({ stats }: { stats: LinkStats[] }) {
+export function LinkPerformanceTable({
+  stats,
+  recipients,
+}: {
+  stats: LinkStats[]
+  /** Link id to recipient, for links aimed at someone specific. */
+  recipients?: Map<string, string>
+}) {
   const max = Math.max(...stats.map((s) => s.total), 1)
 
   return (
     <figure className="m-0">
       <figcaption className="mb-1 text-sm font-medium text-white">Views by link</figcaption>
-      <p className="mb-5 text-xs text-zinc-500">Which version of you people are actually opening</p>
+      <p className="mb-5 text-xs text-zinc-500">
+        {recipients?.size ? 'Who opened which link' : 'Which version of you people are actually opening'}
+      </p>
 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[420px] text-left text-sm">
@@ -34,10 +43,14 @@ export function LinkPerformanceTable({ stats }: { stats: LinkStats[] }) {
                   >
                     {link.label || CONTEXT_LABELS[link.context] || link.context}
                   </Link>
-                  <div className="mt-0.5 flex items-center gap-2">
-                    <span className="text-xs text-zinc-500">
-                      {CONTEXT_LABELS[link.context] ?? link.context}
-                    </span>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-2">
+                    {recipients?.get(link.id) && recipients.get(link.id) !== link.label ? (
+                      <span className="text-xs text-violet-100/70">{recipients.get(link.id)}</span>
+                    ) : (
+                      <span className="text-xs text-zinc-500">
+                        {CONTEXT_LABELS[link.context] ?? link.context}
+                      </span>
+                    )}
                     {!link.is_active && <span className="text-xs text-zinc-600">· paused</span>}
                   </div>
                   <div className="mt-2 h-1 w-full max-w-[220px] overflow-hidden rounded-full bg-white/5">

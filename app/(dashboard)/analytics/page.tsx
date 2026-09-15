@@ -6,7 +6,7 @@ import { StatTile } from '@/components/analytics/StatTile'
 import { DailyViewsChart } from '@/components/analytics/DailyViewsChart'
 import { BarList } from '@/components/analytics/BarList'
 import { LinkPerformanceTable } from '@/components/analytics/LinkPerformanceTable'
-import type { Link as ProfileLink, LinkView } from '@/types/database'
+import type { Link as ProfileLink, LinkTarget, LinkView } from '@/types/database'
 
 export const metadata = { title: 'Analytics · PersonaPage' }
 
@@ -43,6 +43,18 @@ export default async function AnalyticsPage() {
         .limit(5000)
         .returns<LinkView[]>()
     : { data: [] as LinkView[] }
+
+  const { data: targets } = linkIds.length
+    ? await supabase
+        .from('link_targets')
+        .select('link_id, recipient')
+        .in('link_id', linkIds)
+        .returns<Pick<LinkTarget, 'link_id' | 'recipient'>[]>()
+    : { data: [] as Pick<LinkTarget, 'link_id' | 'recipient'>[] }
+
+  const recipients = new Map(
+    (targets ?? []).filter((t) => t.recipient).map((t) => [t.link_id, t.recipient])
+  )
 
   const stats = summarise(views ?? [], links ?? [])
 
@@ -105,7 +117,7 @@ export default async function AnalyticsPage() {
           </section>
 
           <section className={cardClass}>
-            <LinkPerformanceTable stats={stats.perLink} />
+            <LinkPerformanceTable stats={stats.perLink} recipients={recipients} />
           </section>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">

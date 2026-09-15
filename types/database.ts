@@ -64,6 +64,21 @@ export interface Link {
   updated_at: string
 }
 
+/**
+ * Who a link is aimed at, and the posting it was written against.
+ *
+ * Stored apart from `Link` because `Link` is public and this is not — see
+ * supabase/migrations/0002_link_targets.sql.
+ */
+export interface LinkTarget {
+  link_id: string
+  recipient: string
+  source_url: string | null
+  description: string
+  created_at: string
+  updated_at: string
+}
+
 export interface LinkView {
   id: string
   link_id: string

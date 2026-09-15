@@ -34,8 +34,9 @@ profile, so making an account saves work rather than asking for it twice.
 
 1. **Fill in one profile.** Name, headline, bio, skills, projects, tone. This is
    the only place you maintain anything.
-2. **Create a link per audience.** Job application, networking, investor,
-   conference, or general.
+2. **Create a link per audience — or per opportunity.** Pick an audience, or aim
+   the link at one company and paste their job posting. With a posting, your
+   facts get reordered to lead with what it actually asks for.
 3. **Generate.** Each context has its own prompt configuration — a different
    audience, a different thing to lead with, a different call to action — so the
    output is genuinely different, not just reworded. Then edit it by hand if you
@@ -115,7 +116,8 @@ components/
   public/           view capture
   ui/               shared status banner, copy button
 lib/
-  ai/               prompt builder, per-context config, offline fallback
+  ai/               prompt builder, per-context config, job-posting targeting,
+                    offline fallback
   supabase/         browser, server and service-role clients
   analytics.ts      pure aggregation over raw view rows
   validation.ts     zod schemas shared by routes and server actions
@@ -136,6 +138,20 @@ active links are publicly readable; everything writable is scoped to
 `auth.uid()`. The service-role client is used in exactly two places — rendering a
 public page for an anonymous visitor, and recording a view — and both are reads
 or writes of data that is public by design.
+
+**A pasted job posting lives in its own table, not on the link.** `links` is
+public by design; a posting is not — it can carry a recruiter's name, an
+unlisted role, or internal salary bands. `link_targets` has owner-only policies
+and no public policy at all, so leaking it would take a deliberate change rather
+than a careless `select('*')`. The public read paths name their columns
+explicitly for the same reason.
+
+**The posting steers emphasis, never claims.** It reaches the model fenced and
+labelled as data, with instructions to ignore anything inside it that reads like
+a command. That is the first line of defence; the ones that actually hold are
+the constrained output schema and the filter that drops any skill the user never
+claimed. If a posting demands Kubernetes and the profile has never mentioned it,
+nothing downstream can put it on the page.
 
 **Views are written server-side, after the link is verified.** The endpoint takes
 a UUID, confirms the link exists, and only then inserts. Anonymous clients have
@@ -172,10 +188,12 @@ has no business in a search index. The default profile page is indexable.
 
 ## Tests
 
-113 unit tests over the parts where being wrong is silent: analytics bucketing
+142 unit tests over the parts where being wrong is silent: analytics bucketing
 and week-over-week maths, slug generation, contact-link parsing, the offline
-generator, the prompt builder, validation schemas, the rate limiter, and the
-signed trial cookie (including that a forged one is rejected).
+generator, the prompt builder, validation schemas, the rate limiter, the signed
+trial cookie (including that a forged one is rejected), and job-posting skill
+matching — where two regressions found by actually running it are now pinned:
+a skill ending a sentence, and a two-word skill wrapped across a line break.
 
 ```bash
 npm test
@@ -188,9 +206,10 @@ request.
 
 ## Status and direction
 
-Working today: a no-account demo, auth, profile editor, per-audience link
-generation with manual editing, public profile pages with social cards, and
-per-link analytics.
+Working today: a no-account demo, auth, profile editor, per-audience and
+per-opportunity link generation (paste a job posting) with manual editing,
+public profile pages with social cards, and per-link analytics labelled by
+recipient.
 
 **[PRODUCT.md](PRODUCT.md)** is the honest version of where this goes — who
 actually has this problem, what Linktree and Teal and DocSend already do, why
@@ -201,9 +220,9 @@ not need dressing up as a startup.
 
 Nearest concrete work:
 
-- Per-recipient links — one per company or person, not per abstract category
-- Generate against a pasted job description
-- Notify on first open; track outbound contact clicks, not just page views
+- Notify on first open — the retention loop, and the reason to log back in
+- Track outbound contact clicks, not just page views
+- Repeat-open and time-on-page analytics, not just a count
 - Move the rate limiter into Postgres so it holds across instances
 
 ---

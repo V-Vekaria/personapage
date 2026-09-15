@@ -1,4 +1,5 @@
 import { CONTEXT_CONFIG } from './context-config'
+import { rankSkillsAgainstTarget, type GenerationTarget } from './target'
 import type { Context, GeneratedContent, Profile } from '@/types/database'
 
 /**
@@ -32,11 +33,18 @@ export function rankSkills(skills: string[], hints: string[], limit = 5): string
 
 export function generateFallbackContent(
   profile: Profile,
-  context: Context
+  context: Context,
+  target?: GenerationTarget | null
 ): GeneratedContent {
   const config = CONTEXT_CONFIG[context] ?? CONTEXT_CONFIG.general
   const name = profile.full_name || profile.username
-  const skills = rankSkills(profile.skills ?? [], config.fallback.skillHints)
+
+  // With a posting to work from, let it decide which skills lead. Without one,
+  // fall back to the audience's generic hints. Either way this is a reordering
+  // of what the user claimed — nothing is added.
+  const skills = target?.description
+    ? rankSkillsAgainstTarget(profile.skills ?? [], target.description, config.fallback.skillHints)
+    : rankSkills(profile.skills ?? [], config.fallback.skillHints)
   const firstProject = (profile.projects ?? []).find((p) => p.title?.trim())
 
   return {
