@@ -1,0 +1,78 @@
+/**
+ * Shapes returned by Supabase. These mirror supabase/migrations/0001_init.sql —
+ * if you change a column there, change it here too.
+ */
+
+export const CONTEXTS = [
+  'job_application',
+  'networking',
+  'investor',
+  'conference',
+  'general',
+] as const
+
+export type Context = (typeof CONTEXTS)[number]
+
+export const CONTEXT_LABELS: Record<Context, string> = {
+  job_application: 'Job application',
+  networking: 'Networking',
+  investor: 'Investor pitch',
+  conference: 'Conference / event',
+  general: 'General',
+}
+
+export const TONES = ['casual', 'neutral', 'formal'] as const
+export type Tone = (typeof TONES)[number]
+
+export interface Project {
+  title: string
+  description: string
+  tech: string[]
+}
+
+export interface Profile {
+  id: string
+  username: string
+  full_name: string | null
+  contact: string | null
+  headline: string | null
+  bio: string | null
+  skills: string[]
+  projects: Project[]
+  tone: Tone
+  created_at: string
+  updated_at: string
+}
+
+/** What the AI (or the offline fallback) produces for one link. */
+export interface GeneratedContent {
+  headline: string
+  summary: string
+  skills: string[]
+  cta_text: string
+}
+
+export interface Link {
+  id: string
+  user_id: string
+  context: Context
+  label: string
+  slug: string
+  generated_content: GeneratedContent | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface LinkView {
+  id: string
+  link_id: string
+  referrer: string | null
+  country: string | null
+  device: 'mobile' | 'desktop' | null
+  created_at: string
+}
+
+export function isContext(value: string): value is Context {
+  return (CONTEXTS as readonly string[]).includes(value)
+}
