@@ -7,9 +7,26 @@ co-founder. PersonaPage keeps one master profile and generates a tailored public
 page per audience — so the link you hand someone is written for the conversation
 you're actually having.
 
-**Live → [personapage-app.vercel.app](https://personapage-app.vercel.app)**
+**Live → [personapage-app.vercel.app](https://personapage-app.vercel.app)** · **[Try it with no account](https://personapage-app.vercel.app/try)**
 
 ![PersonaPage landing page](.github/assets/landing.png)
+
+## Try it without signing up
+
+Nobody types their bio into a signup form to find out whether a product is any
+good, so `/try` works with no account: three free generations, prefilled so the
+first one is a single click.
+
+Generate once, switch audience, generate again — the two sit side by side and
+the facts never changed, only what leads.
+
+![The try page, showing the same profile written for two different audiences](.github/assets/try.png)
+
+Nothing is written to the database on that path. The draft goes up in the
+request, the content comes back in the response, and that's the whole lifecycle,
+so a visitor leaves no rows behind and hands over no personal data before
+deciding to sign up. What they typed carries into signup and lands on their
+profile, so making an account saves work rather than asking for it twice.
 
 ---
 
@@ -88,8 +105,10 @@ app/
   (dashboard)/      dashboard, profile, links, analytics — all auth-gated
   api/
     ai/generate     generates and saves tailored content for one link
+    ai/try          anonymous generation — validates, rate limits, persists nothing
     analytics/view  records a page view after verifying the link exists
   p/[username]/     the public profile page + its dynamic OG image
+  try/              the no-account demo
 components/
   analytics/        chart and stat components
   dashboard/        sidebar and mobile navigation
@@ -132,6 +151,15 @@ in memory, which on serverless counts per instance — enough to stop someone
 holding down the button and running up a bill, and documented as not being more
 than that.
 
+**The anonymous trial has two limits doing two different jobs.** A signed
+httpOnly cookie holds the count the UI shows; it's HMAC-signed so it can't be
+casually edited, but a rejected cookie is indistinguishable from a first visit,
+so clearing cookies resets the trial. That's accepted, and asserted in a test
+rather than left as a surprise. The per-IP rate limit is what actually bounds
+cost. Every input field on that endpoint is hard-capped — without caps it would
+be a free LLM proxy for anyone willing to paste a few thousand words into a
+"bio" field.
+
 **The offline fallback is a real feature, not a stub.** It reorders skills per
 audience, changes sentence order and call to action per context, and is
 deterministic — which also makes the whole generation path testable without
@@ -144,9 +172,10 @@ has no business in a search index. The default profile page is indexable.
 
 ## Tests
 
-86 unit tests over the parts where being wrong is silent: analytics bucketing
+113 unit tests over the parts where being wrong is silent: analytics bucketing
 and week-over-week maths, slug generation, contact-link parsing, the offline
-generator, the prompt builder, validation schemas, and the rate limiter.
+generator, the prompt builder, validation schemas, the rate limiter, and the
+signed trial cookie (including that a forged one is rejected).
 
 ```bash
 npm test
@@ -157,18 +186,25 @@ request.
 
 ---
 
-## Status and roadmap
+## Status and direction
 
-Working today: auth, profile editor, per-audience link generation with manual
-editing, public profile pages with social cards, and per-link analytics.
+Working today: a no-account demo, auth, profile editor, per-audience link
+generation with manual editing, public profile pages with social cards, and
+per-link analytics.
 
-Next up:
+**[PRODUCT.md](PRODUCT.md)** is the honest version of where this goes — who
+actually has this problem, what Linktree and Teal and DocSend already do, why
+the five audience categories are too coarse, and why the tracking is probably
+worth more than the AI writing. It includes a candid read on viability, since
+"finish it because it demonstrates something" is a legitimate reason that does
+not need dressing up as a startup.
 
-- Custom domains for public profiles
-- Profile themes beyond the current one
-- Click tracking on outbound contact links, not just page views
-- A PDF export of a tailored profile
-- Moving the rate limiter into Postgres so it holds across instances
+Nearest concrete work:
+
+- Per-recipient links — one per company or person, not per abstract category
+- Generate against a pasted job description
+- Notify on first open; track outbound contact clicks, not just page views
+- Move the rate limiter into Postgres so it holds across instances
 
 ---
 
