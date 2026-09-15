@@ -29,7 +29,7 @@ export default function Home() {
           <div>
             <div className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 bg-violet-950/30 border border-violet-400/20 rounded-2xl px-3 py-1.5 text-xs leading-snug text-violet-100/80 mb-8 max-w-full shadow-[0_0_28px_rgba(124,58,237,0.12)]">
               <span className="w-1.5 h-1.5 shrink-0 bg-violet-300 rounded-full shadow-[0_0_12px_rgba(196,181,253,0.85)]" aria-hidden />
-              Demo prepared for London Tech Week networking
+              Built for the conversations you actually have
             </div>
 
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight leading-tight text-balance mb-6">
@@ -41,7 +41,7 @@ export default function Home() {
             </h1>
 
             <p className="text-zinc-300 text-base sm:text-lg max-w-2xl leading-relaxed mb-10">
-              The side project, the client work, the thing you're raising for — you don't
+              The side project, the client work, the thing you&rsquo;re raising for &mdash; you don&rsquo;t
               pitch them the same way in person, so why does your link? Build one profile,
               share the version that fits the conversation.
             </p>
@@ -168,9 +168,14 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-violet-300/10 px-4 sm:px-8 py-6 max-w-5xl mx-auto flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-xs text-zinc-600">PersonaPage</span>
-        <span className="text-xs text-zinc-600 leading-snug">
-          Demo prepared for London Tech Week networking
-        </span>
+        <a
+          href="https://github.com/V-Vekaria/personapage"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-zinc-600 leading-snug transition hover:text-violet-200"
+        >
+          Source on GitHub
+        </a>
       </footer>
 
     </div>
