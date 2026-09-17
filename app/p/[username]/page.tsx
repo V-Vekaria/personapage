@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import NextLink from 'next/link'
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/server'
+import { PUBLIC_LINK_COLUMNS, PUBLIC_PROFILE_COLUMNS } from '@/lib/supabase/columns'
 import { ViewCapture } from '@/components/public/ViewCapture'
 import { ContactLink } from '@/components/public/ContactLink'
 import { connectLabel, contactHref } from '@/lib/contact'
@@ -27,7 +28,7 @@ async function loadProfilePage(username: string, slug?: string) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, username, full_name, contact, headline, bio, skills, projects, tone, created_at, updated_at')
+    .select(PUBLIC_PROFILE_COLUMNS)
     .ilike('username', username)
     .maybeSingle<Profile>()
 
@@ -37,7 +38,7 @@ async function loadProfilePage(username: string, slug?: string) {
   // from serving a pasted job description to the internet.
   const query = supabase
     .from('links')
-    .select('id, user_id, context, label, slug, generated_content, is_active, created_at, updated_at')
+    .select(PUBLIC_LINK_COLUMNS)
     .eq('user_id', profile.id)
 
   const { data: link } = slug

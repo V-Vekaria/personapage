@@ -68,13 +68,14 @@ project, in order, either with `supabase db push` or by pasting each file into
 the Supabase SQL editor:
 
 ```
-0001_init.sql          profiles, links, link_views, and the RLS policies
-0002_link_targets.sql  who a link is aimed at, and the posting behind it
-0003_link_clicks.sql   outbound contact clicks
+0001_init.sql                profiles, links, link_views, and the RLS policies
+0002_link_targets.sql        who a link is aimed at, and the posting behind it
+0003_link_clicks.sql         outbound contact clicks
+0004_restrict_public_reads.sql  removes the anon role's read access
 ```
 
-All three are idempotent, so re-running them on a database that already has data
-is safe.
+All four are idempotent, so re-running them on a database that already has data
+is safe. `0004` is a security fix and tightens access — run it.
 
 ```bash
 npm run dev                    # http://localhost:3000
@@ -90,7 +91,7 @@ complete profile and one link per audience.
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | yes | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | yes | Browser-safe key; every query it makes is gated by RLS |
-| `SUPABASE_SERVICE_ROLE_KEY` | yes | Server-only. Renders public pages for signed-out visitors and records views |
+| `SUPABASE_SERVICE_ROLE_KEY` | yes | Server-only, and load-bearing: it is the *only* way public profile pages are read, since no policy grants the anon role access |
 | `OPENAI_API_KEY` | no | Without it, the offline template writer is used |
 | `OPENAI_MODEL` | no | Defaults to `gpt-4.1` |
 | `NEXT_PUBLIC_SITE_URL` | no | Canonical origin for social cards; inferred on Vercel |
@@ -130,6 +131,7 @@ lib/
                     offline fallback
   supabase/         browser, server and service-role clients
   analytics.ts      pure aggregation over raw view and click rows
+  supabase/columns.ts  the tested allowlist for the public read path
   validation.ts     zod schemas shared by routes and server actions
 supabase/
   migrations/       the schema, with RLS policies
@@ -143,12 +145,21 @@ OpenAI, deployed on Vercel.**
 
 ### A few decisions worth explaining
 
-**Row level security does the access control, not the app code.** Profiles and
-active links are publicly readable; everything writable is scoped to
-`auth.uid()`. The service-role client is used in exactly three places —
-rendering a public page for an anonymous visitor, recording a view, and
-recording a click — and all three are reads or writes of data that is public by
-design.
+**Row level security does the access control, not the app code.** Every policy
+is scoped to `auth.uid()` — the anon role can read nothing at all. That is
+deliberate: every anonymous read path in this app goes through the service-role
+client, which bypasses RLS anyway, so a public read policy would have granted
+access nothing needed while the anon key sits inlined in the deployed bundle.
+An earlier version of this schema did exactly that, and it leaked every user's
+link labels and slugs to anyone who read the key out of the JavaScript; see
+`supabase/migrations/0004_restrict_public_reads.sql`.
+
+**The public path's select list is the security boundary, so it is a tested
+constant.** With RLS bypassed by the service role, the columns named in the
+query are the only thing between a table and a visitor. They live in
+`lib/supabase/columns.ts` and `tests/public-columns.test.ts` asserts that they
+exclude owner-only fields and that neither public file ever reaches for
+`select('*')` or touches `link_targets`.
 
 **A pasted job posting lives in its own table, not on the link.** `links` is
 public by design; a posting is not — it can carry a recruiter's name, an
@@ -206,13 +217,15 @@ has no business in a search index. The default profile page is indexable.
 
 ## Tests
 
-154 unit tests over the parts where being wrong is silent: analytics bucketing
+163 unit tests over the parts where being wrong is silent: analytics bucketing
 and week-over-week maths, click-through rates and the divide-by-zero an
 unopened link gives, slug generation, contact-link parsing, the offline
 generator, the prompt builder, validation schemas, the rate limiter, the signed
 trial cookie (including that a forged one is rejected), and job-posting skill
 matching — where two regressions found by actually running it are now pinned:
-a skill ending a sentence, and a two-word skill wrapped across a line break.
+a skill ending a sentence, and a two-word skill wrapped across a line break. The
+public-path column allowlist is asserted too, and both of its guards were
+checked by deliberately reintroducing the regressions they exist to catch.
 
 ```bash
 npm test

@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og'
 import { createAdminClient } from '@/lib/supabase/server'
+import { PUBLIC_LINK_COLUMNS, PUBLIC_PROFILE_COLUMNS } from '@/lib/supabase/columns'
 import type { Link as ProfileLink, Profile } from '@/types/database'
 
 export const runtime = 'nodejs'
@@ -24,14 +25,14 @@ export default async function Image({ params }: { params: { username: string } }
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, username, full_name, contact, headline, bio, skills, projects, tone, created_at, updated_at')
+    .select(PUBLIC_PROFILE_COLUMNS)
     .ilike('username', params.username)
     .maybeSingle<Profile>()
 
   const { data: link } = profile
     ? await supabase
         .from('links')
-        .select('id, user_id, context, label, slug, generated_content, is_active, created_at, updated_at')
+        .select(PUBLIC_LINK_COLUMNS)
         .eq('user_id', profile.id)
         .eq('is_active', true)
         .order('created_at', { ascending: true })
