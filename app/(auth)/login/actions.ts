@@ -5,16 +5,19 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
 export async function login(formData: FormData) {
-  const supabase = await createClient()
+  const email = String(formData.get('email') ?? '').trim()
+  const password = String(formData.get('password') ?? '')
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email: formData.get('email') as string,
-    password: formData.get('password') as string,
-  })
-
-  if (error) {
-    redirect('/login?error=Invalid credentials')
+  if (!email || !password) {
+    redirect('/login?error=Enter your email and password')
   }
+
+  const supabase = await createClient()
+  const { error } = await supabase.auth.signInWithPassword({ email, password })
+
+  // Deliberately vague: distinguishing "no such account" from "wrong password"
+  // turns the login form into an account-existence oracle.
+  if (error) redirect('/login?error=Invalid email or password')
 
   revalidatePath('/', 'layout')
   redirect('/dashboard')

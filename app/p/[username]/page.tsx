@@ -1,48 +1,101 @@
-import { createAdminClient } from '@/lib/supabase/server'
-import { notFound } from 'next/navigation'
-import { ViewCapture } from '@/components/public/ViewCapture'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-
-type Project = {
-  title: string
-  description: string
-  tech?: string[]
-}
-
-function connectLabel(contact: string): string {
-  try {
-    const url = contact.startsWith('http') ? contact : 'https://' + contact
-    const host = new URL(url).hostname.replace('www.', '')
-    if (host.includes('linkedin.com')) return 'Connect on LinkedIn'
-    if (host.includes('twitter.com') || host.includes('x.com')) return 'Connect on X'
-    if (host.includes('github.com')) return 'View on GitHub'
-    if (host.includes('instagram.com')) return 'Connect on Instagram'
-    if (host.includes('facebook.com')) return 'Connect on Facebook'
-    if (host.includes('bsky.app')) return 'Connect on Bluesky'
-    if (host.includes('threads.net')) return 'Connect on Threads'
-    if (host.includes('behance.net')) return 'View on Behance'
-    if (host.includes('dribbble.com')) return 'View on Dribbble'
-    return 'Connect'
-  } catch {
-    return 'Connect'
-  }
-}
+import NextLink from 'next/link'
+import { notFound } from 'next/navigation'
+import { createAdminClient } from '@/lib/supabase/server'
+import { PUBLIC_LINK_COLUMNS, PUBLIC_PROFILE_COLUMNS } from '@/lib/supabase/columns'
+import { ViewCapture } from '@/components/public/ViewCapture'
+import { ContactLink } from '@/components/public/ContactLink'
+import { connectLabel, contactHref } from '@/lib/contact'
+import { siteUrl } from '@/lib/site'
+import { CONTEXT_LABELS } from '@/types/database'
+import type { Link as ProfileLink, Profile, Project } from '@/types/database'
 
 interface Props {
   params: Promise<{ username: string }>
   searchParams: Promise<{ link?: string }>
 }
 
-function contactHref(contact: string): string {
-  return contact.startsWith('http') ? contact : 'https://' + contact
+/**
+ * Loads the profile and the link being viewed.
+ *
+ * Uses the service-role client because visitors are anonymous, and reads only
+ * intentionally public data. Shared by the page and its metadata so a request
+ * does not resolve the same rows twice under different rules.
+ */
+async function loadProfilePage(username: string, slug?: string) {
+  const supabase = createAdminClient()
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select(PUBLIC_PROFILE_COLUMNS)
+    .ilike('username', username)
+    .maybeSingle<Profile>()
+
+  if (!profile) return null
+
+  // Explicit columns, never '*'. The public path must not be one refactor away
+  // from serving a pasted job description to the internet.
+  const query = supabase
+    .from('links')
+    .select(PUBLIC_LINK_COLUMNS)
+    .eq('user_id', profile.id)
+
+  const { data: link } = slug
+    ? await query.eq('slug', slug).maybeSingle<ProfileLink>()
+    : await query
+        .eq('is_active', true)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle<ProfileLink>()
+
+  return { profile, link: link ?? null }
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { username } = await params
+  const { link: slug } = await searchParams
+  const data = await loadProfilePage(username, slug)
+
+  if (!data) {
+    return { title: 'Profile not found · PersonaPage', robots: { index: false, follow: false } }
+  }
+
+  const { profile, link } = data
+  const name = profile.full_name || profile.username
+  const content = link?.generated_content
+  const title = `${name} · PersonaPage`
+  const description =
+    content?.summary ||
+    profile.bio ||
+    content?.headline ||
+    profile.headline ||
+    `The profile of ${name}.`
+
+  const path = slug
+    ? `/p/${encodeURIComponent(profile.username)}?link=${encodeURIComponent(slug)}`
+    : `/p/${encodeURIComponent(profile.username)}`
+
   return {
-    title: `${username} - PersonaPage`,
-    description: `Professional profile for ${username}`,
+    metadataBase: new URL(siteUrl()),
+    title,
+    // Social cards truncate hard — keep the useful half above the fold.
+    description: description.slice(0, 200),
+    alternates: { canonical: path },
+    openGraph: {
+      type: 'profile',
+      title,
+      description: description.slice(0, 200),
+      url: path,
+      siteName: 'PersonaPage',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description: description.slice(0, 200),
+    },
+    // A tailored link is meant for one conversation, not for a search index.
+    robots: slug ? { index: false, follow: true } : { index: true, follow: true },
   }
 }
 
@@ -50,61 +103,61 @@ export default async function PublicProfilePage({ params, searchParams }: Props)
   const { username } = await params
   const { link: slug } = await searchParams
 
-  const supabase = createAdminClient()
+  const data = await loadProfilePage(username, slug)
+  if (!data) notFound()
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .ilike('username', username)
-    .single()
-
-  if (!profile) notFound()
-
-  let activeLink = null
-
-  if (slug) {
-    const { data } = await supabase
-      .from('links')
-      .select('*')
-      .eq('slug', slug)
-      .eq('user_id', profile.id)
-      .single()
-    activeLink = data
-  } else {
-    const { data } = await supabase
-      .from('links')
-      .select('*')
-      .eq('user_id', profile.id)
-      .eq('is_active', true)
-      .order('created_at', { ascending: true })
-      .limit(1)
-      .single()
-    activeLink = data
-  }
-
-  const skills: string[] = profile.skills ?? []
+  const { profile, link } = data
+  const content = link?.generated_content
+  const skills = content?.skills?.length ? content.skills : (profile.skills ?? [])
   const projects: Project[] = profile.projects ?? []
-  const generatedContent = activeLink?.generated_content
-  const contact = profile.contact as string | null
+  const contact = profile.contact?.trim() || null
+
+  const badge = link
+    ? (CONTEXT_LABELS[link.context] ?? 'Profile')
+    : 'Profile'
 
   return (
     <ProfileShell>
-      {activeLink && <ViewCapture linkId={activeLink.id} />}
+      {link && <ViewCapture linkId={link.id} />}
 
-      <HeroCard
-        label={slug ? 'Tailored profile' : 'Public profile'}
-        name={profile.full_name || username}
-        headline={generatedContent?.headline || profile.headline || 'Building things.'}
-        intro={generatedContent?.summary || profile.bio}
-        ctaHref={contact ? contactHref(contact) : undefined}
-        ctaLabel={contact ? connectLabel(contact) : undefined}
-      />
+      <header className="mb-6 rounded-lg border border-violet-300/15 bg-zinc-950/75 p-5 shadow-[0_24px_80px_rgba(24,8,45,0.55),0_0_42px_rgba(124,58,237,0.14)] backdrop-blur sm:mb-8 sm:p-7">
+        <p className="mb-5 inline-flex rounded-full border border-violet-300/25 bg-violet-400/10 px-3 py-1 text-xs font-medium text-violet-100">
+          {badge}
+        </p>
+        <h1 className="break-words text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+          {profile.full_name || profile.username}
+        </h1>
+        <p className="mt-3 break-words text-base leading-relaxed text-violet-100/90 sm:text-lg">
+          {content?.headline || profile.headline || 'Building things.'}
+        </p>
+        {(content?.summary || profile.bio) && (
+          <p className="mt-5 max-w-2xl break-words text-sm leading-relaxed text-zinc-300 sm:text-base">
+            {content?.summary || profile.bio}
+          </p>
+        )}
+        {contact && (
+          <div className="mt-6">
+            <ContactLink href={contactHref(contact)} linkId={link?.id}>
+              {connectLabel(contact)}
+            </ContactLink>
+          </div>
+        )}
+      </header>
 
       {projects.length > 0 && (
         <Section title="Projects">
           <div className="grid gap-4">
             {projects.map((project, index) => (
-              <ProjectCard key={`${project.title}-${index}`} project={project} />
+              <article
+                key={`${project.title}-${index}`}
+                className="rounded-lg border border-zinc-800/90 bg-zinc-900/65 p-4 transition hover:border-violet-300/30 sm:p-5"
+              >
+                <h3 className="mb-2 font-medium text-white">{project.title}</h3>
+                {project.description && (
+                  <p className="mb-4 text-sm leading-relaxed text-zinc-300/85">{project.description}</p>
+                )}
+                {project.tech && project.tech.length > 0 && <TagList items={project.tech} />}
+              </article>
             ))}
           </div>
         </Section>
@@ -117,17 +170,21 @@ export default async function PublicProfilePage({ params, searchParams }: Props)
       )}
 
       <Section title="Get in touch">
-        <p className="text-zinc-300 text-sm leading-relaxed mb-4">
-          {generatedContent?.cta_text || 'Open to opportunities and conversations.'}
+        <p className="mb-4 text-sm leading-relaxed text-zinc-300">
+          {content?.cta_text || 'Open to opportunities and conversations.'}
         </p>
         {contact && (
-          <ProfileButton href={contactHref(contact)}>
+          <ContactLink href={contactHref(contact)} linkId={link?.id}>
             {connectLabel(contact)}
-          </ProfileButton>
+          </ContactLink>
         )}
       </Section>
 
-      <ProfileFooter />
+      <footer className="border-t border-violet-300/10 pt-6">
+        <NextLink href="/" className="text-xs text-zinc-500 transition hover:text-violet-100">
+          Built with PersonaPage
+        </NextLink>
+      </footer>
     </ProfileShell>
   )
 }
@@ -136,73 +193,22 @@ function ProfileShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,rgba(124,58,237,0.18),transparent_34rem),linear-gradient(180deg,#09090b_0%,#181020_48%,#09090b_100%)] text-white">
       <div className="relative overflow-hidden">
-        <div className="absolute inset-x-4 top-10 h-72 bg-[radial-gradient(ellipse_at_center,rgba(139,92,246,0.2),transparent_68%)] blur-3xl" aria-hidden />
-        <main className="relative z-10 max-w-3xl mx-auto px-4 py-8 sm:px-6 sm:py-14">
-          {children}
-        </main>
+        <div
+          className="absolute inset-x-4 top-10 h-72 bg-[radial-gradient(ellipse_at_center,rgba(139,92,246,0.2),transparent_68%)] blur-3xl"
+          aria-hidden
+        />
+        <main className="relative z-10 mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-14">{children}</main>
       </div>
     </div>
   )
 }
 
-function HeroCard({
-  label,
-  name,
-  headline,
-  intro,
-  ctaHref,
-  ctaLabel,
-}: {
-  label: string
-  name: string
-  headline: string
-  intro?: string
-  ctaHref?: string
-  ctaLabel?: string
-}) {
-  return (
-    <header className="mb-6 sm:mb-8 rounded-lg border border-violet-300/15 bg-zinc-950/75 p-5 sm:p-7 shadow-[0_24px_80px_rgba(24,8,45,0.55),0_0_42px_rgba(124,58,237,0.14)] backdrop-blur">
-      <div className="mb-5 inline-flex rounded-full border border-violet-300/25 bg-violet-400/10 px-3 py-1 text-xs font-medium text-violet-100">
-        {label}
-      </div>
-      <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white break-words">
-        {name}
-      </h1>
-      <p className="mt-3 text-base sm:text-lg leading-relaxed text-violet-100/90 break-words">
-        {headline}
-      </p>
-      {intro && (
-        <p className="mt-5 max-w-2xl text-sm sm:text-base leading-relaxed text-zinc-300 break-words">
-          {intro}
-        </p>
-      )}
-      {ctaHref && ctaLabel && (
-        <div className="mt-6">
-          <ProfileButton href={ctaHref}>{ctaLabel}</ProfileButton>
-        </div>
-      )}
-    </header>
-  )
-}
-
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="mb-6 sm:mb-8 rounded-lg border border-violet-300/10 bg-zinc-950/60 p-5 sm:p-6 shadow-[0_0_34px_rgba(124,58,237,0.08)]">
-      <h2 className="text-xs font-medium text-violet-200/75 uppercase tracking-widest mb-4">
-        {title}
-      </h2>
+    <section className="mb-6 rounded-lg border border-violet-300/10 bg-zinc-950/60 p-5 shadow-[0_0_34px_rgba(124,58,237,0.08)] sm:mb-8 sm:p-6">
+      <h2 className="mb-4 text-xs font-medium uppercase tracking-widest text-violet-200/75">{title}</h2>
       {children}
     </section>
-  )
-}
-
-function ProjectCard({ project }: { project: Project }) {
-  return (
-    <article className="rounded-lg border border-zinc-800/90 bg-zinc-900/65 p-4 sm:p-5 transition hover:border-violet-300/30">
-      <h3 className="text-white font-medium mb-2">{project.title}</h3>
-      <p className="text-zinc-300/85 text-sm leading-relaxed mb-4">{project.description}</p>
-      {project.tech && project.tech.length > 0 && <TagList items={project.tech} />}
-    </article>
   )
 }
 
@@ -210,33 +216,13 @@ function TagList({ items }: { items: string[] }) {
   return (
     <div className="flex flex-wrap gap-2">
       {items.map((item) => (
-        <span key={item} className="text-xs bg-violet-950/40 border border-violet-300/15 text-violet-50/85 px-2.5 py-1 rounded-full">
+        <span
+          key={item}
+          className="rounded-full border border-violet-300/15 bg-violet-950/40 px-2.5 py-1 text-xs text-violet-50/85"
+        >
           {item}
         </span>
       ))}
     </div>
-  )
-}
-
-function ProfileButton({ href, children }: { href: string; children: ReactNode }) {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-white to-violet-100 px-4 py-2.5 text-sm font-medium text-zinc-950 shadow-[0_0_30px_rgba(124,58,237,0.22)] transition hover:from-white hover:to-fuchsia-100"
-    >
-      {children}
-    </a>
-  )
-}
-
-function ProfileFooter() {
-  return (
-    <footer className="border-t border-violet-300/10 pt-6">
-      <a href="/" className="text-xs text-zinc-500 hover:text-violet-100 transition">
-        Built with PersonaPage
-      </a>
-    </footer>
   )
 }

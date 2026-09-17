@@ -1,4 +1,5 @@
 import { signup } from './actions'
+import { DraftCarry } from './DraftCarry'
 
 interface Props {
   searchParams: Promise<{ error?: string }>
@@ -23,6 +24,7 @@ export default async function SignupPage({ searchParams }: Props) {
         </div>
 
         <form action={signup} className="space-y-4">
+          <DraftCarry />
           <div>
             <label htmlFor="username" className="block text-sm text-zinc-300 mb-1.5">
               Username

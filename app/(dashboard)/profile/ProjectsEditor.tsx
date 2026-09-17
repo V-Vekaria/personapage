@@ -2,18 +2,21 @@
 
 import { useState } from 'react'
 
-interface Project {
+import type { Project } from '@/types/database'
+
+/** The editor keeps `tech` as a raw comma-separated string while you type. */
+interface ProjectDraft {
   title: string
   description: string
   tech: string
 }
 
 interface Props {
-  initial: { title: string; description: string; tech: string[] }[]
+  initial: Project[]
 }
 
 export function ProjectsEditor({ initial }: Props) {
-  const [projects, setProjects] = useState<Project[]>(
+  const [projects, setProjects] = useState<ProjectDraft[]>(
     initial.length > 0
       ? initial.map(p => ({ title: p.title, description: p.description, tech: p.tech?.join(', ') ?? '' }))
       : [{ title: '', description: '', tech: '' }]
@@ -27,7 +30,7 @@ export function ProjectsEditor({ initial }: Props) {
     setProjects(prev => prev.filter((_, i) => i !== index))
   }
 
-  function update(index: number, field: keyof Project, value: string) {
+  function update(index: number, field: keyof ProjectDraft, value: string) {
     setProjects(prev => prev.map((p, i) => i === index ? { ...p, [field]: value } : p))
   }
 
