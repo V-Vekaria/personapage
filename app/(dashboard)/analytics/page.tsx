@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { summarise } from '@/lib/analytics'
+import { formatReadTime } from '@/lib/dwell'
 import { StatTile } from '@/components/analytics/StatTile'
 import { DailyViewsChart } from '@/components/analytics/DailyViewsChart'
 import { BarList } from '@/components/analytics/BarList'
@@ -73,8 +74,8 @@ export default async function AnalyticsPage() {
         <p className="mb-3 text-xs font-medium uppercase tracking-widest text-violet-200/75">Analytics</p>
         <h1 className="text-2xl font-semibold text-white">Analytics</h1>
         <p className="mt-2 text-sm leading-relaxed text-zinc-300">
-          Counted server-side, per link. No IP addresses and no cookies — a country and a
-          desktop/mobile bucket is all that is stored.
+          Counted server-side, per link. No IP addresses and no cookies — a country, a
+          desktop/mobile bucket and how long the tab was visible is all that is stored.
         </p>
       </header>
 
@@ -95,7 +96,15 @@ export default async function AnalyticsPage() {
       ) : (
         <div className="space-y-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatTile label="Total views" value={stats.total} detail="all time" />
+            <StatTile
+              label="Total views"
+              value={stats.total}
+              detail={
+                stats.medianDwellMs === null
+                  ? 'all time'
+                  : `typically read for ${formatReadTime(stats.medianDwellMs)}`
+              }
+            />
             <StatTile
               label="Contact clicks"
               value={stats.clicks}
@@ -131,7 +140,11 @@ export default async function AnalyticsPage() {
           </section>
 
           <section className={cardClass}>
-            <LinkPerformanceTable stats={stats.perLink} recipients={recipients} />
+            <LinkPerformanceTable
+              stats={stats.perLink}
+              recipients={recipients}
+              readSamples={stats.readSamples}
+            />
           </section>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">

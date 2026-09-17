@@ -113,14 +113,20 @@ In order, most valuable first:
    page is written against it. Grounding did not move: the posting controls
    emphasis, never claims, and the source text is stored in a table with no
    public policy so it can never reach the profile page.
-3. **Analytics worth opening the app for.** *Mostly built.* First-open time
-   relative to when the link was created, and how many separate days it was
-   opened on, are both shown per link now. Time on page is the piece still
-   missing.
+3. ~~**Analytics worth opening the app for.**~~ **Built.** First-open time
+   relative to when the link was created, how many separate days it was opened
+   on, and now how long each visit actually lasted. Read time is the one that
+   separates "fourteen people saw it" from "fourteen people considered it",
+   which is the measure DocSend built a business on and the closest thing this
+   product has to a durable reason to open it. Only visible time counts — a tab
+   left open overnight reports nothing — and the median is shown rather than the
+   mean, because one thirty-minute outlier would otherwise describe a set of
+   thirty-second visits.
 4. **Notify on open.** Email or push the first time a link is opened. This is
    the retention loop; without it there is no reason to log back in. It is now
-   the top of this list, and the first item that needs infrastructure (an email
-   provider) rather than only code.
+   the only unbuilt item on this list, and the only one that needs
+   infrastructure (an email provider) rather than only code — which is why it
+   is waiting on a decision rather than on effort.
 5. ~~**Outbound click tracking.**~~ **Built.** Clicks on the contact button are
    recorded and shown beside views with a click-through rate, so "14 views"
    finally distinguishes fourteen people who read it from fourteen who acted.

@@ -87,6 +87,18 @@ export const linkTargetSchema = z.object({
 
 export type LinkTargetInput = z.infer<typeof linkTargetSchema>
 
+/**
+ * A read time reported for one view.
+ *
+ * Anything past a day is nonsense rather than a long read and is rejected;
+ * everything below that is clamped to DWELL_CAP_MS by the route, so a browser
+ * with a skewed clock costs one capped row rather than a 400.
+ */
+export const dwellRequestSchema = z.object({
+  view_id: z.uuid(),
+  ms: z.number().int().min(0).max(86_400_000),
+})
+
 export const clickRequestSchema = z.object({
   link_id: z.uuid(),
   target: z.string().trim().min(1).max(40).default('contact'),

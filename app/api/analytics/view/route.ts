@@ -11,6 +11,9 @@ import { viewRequestSchema } from '@/lib/validation'
  * would happily write rows for any UUID anyone posted at it. No IP address and
  * no user agent is stored; a country code and a desktop/mobile bucket is the
  * whole payload.
+ *
+ * Responds with the new row's id so the page can report a read time for this
+ * view once the visitor leaves — see app/api/analytics/dwell/route.ts.
  */
 export async function POST(request: Request) {
   let body: unknown
@@ -47,17 +50,24 @@ export async function POST(request: Request) {
     request.headers.get('cf-ipcountry') ??
     null
 
-  const { error } = await supabase.from('link_views').insert({
-    link_id: parsed.data.link_id,
-    referrer: parsed.data.referrer || null,
-    device: parsed.data.device ?? null,
-    country,
-  })
+  // The id comes back so the page can report a read time against this exact
+  // view later. It identifies one anonymous open and nothing else — holding it
+  // lets the visitor amend their own row and reveals nothing about anyone.
+  const { data: view, error } = await supabase
+    .from('link_views')
+    .insert({
+      link_id: parsed.data.link_id,
+      referrer: parsed.data.referrer || null,
+      device: parsed.data.device ?? null,
+      country,
+    })
+    .select('id')
+    .single()
 
   if (error) {
     console.error('Failed to record view:', error)
     return NextResponse.json({ error: 'failed' }, { status: 500 })
   }
 
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true, id: view.id })
 }

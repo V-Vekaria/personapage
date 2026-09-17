@@ -72,9 +72,10 @@ the Supabase SQL editor:
 0002_link_targets.sql        who a link is aimed at, and the posting behind it
 0003_link_clicks.sql         outbound contact clicks
 0004_restrict_public_reads.sql  removes the anon role's read access
+0005_link_dwell.sql          how long each view actually lasted
 ```
 
-All four are idempotent, so re-running them on a database that already has data
+All five are idempotent, so re-running them on a database that already has data
 is safe. `0004` is a security fix and tightens access — run it.
 
 ```bash
@@ -119,6 +120,7 @@ app/
     ai/try          anonymous generation — validates, rate limits, persists nothing
     analytics/view  records a page view after verifying the link exists
     analytics/click records an outbound contact click — the conversion event
+    analytics/dwell records how long one view lasted, attached to that view
   p/[username]/     the public profile page + its dynamic OG image
   try/              the no-account demo
 components/
@@ -131,6 +133,7 @@ lib/
                     offline fallback
   supabase/         browser, server and service-role clients
   analytics.ts      pure aggregation over raw view and click rows
+  dwell.ts          read-time cap, formatting, and the visible-time timer
   supabase/columns.ts  the tested allowlist for the public read path
   validation.ts     zod schemas shared by routes and server actions
 supabase/
@@ -186,6 +189,14 @@ views. A profile page shouldn't become a tracker — which is also why "opened o
 3 separate days" is derived from timestamps already stored rather than from a
 per-visitor identifier.
 
+**Read time counts only visible time, and is capped.** A tab left open in the
+background overnight would otherwise report eight hours, so hidden time is
+excluded rather than merely clipped. The number still comes from the visitor's
+browser, so it is bounded at thirty minutes in the endpoint and again by a
+`CHECK` constraint — one crafted request cannot claim a view lasted a year and
+poison the median. It attaches to a view that already exists, which is what
+stops anyone writing read times for links that do not.
+
 **Clicks are recorded with `sendBeacon`.** The browser is navigating away at
 that exact moment and an ordinary request can be cancelled mid-flight; a beacon
 is queued and delivered regardless, without delaying the navigation. Losing the
@@ -217,7 +228,7 @@ has no business in a search index. The default profile page is indexable.
 
 ## Tests
 
-163 unit tests over the parts where being wrong is silent: analytics bucketing
+197 unit tests over the parts where being wrong is silent: analytics bucketing
 and week-over-week maths, click-through rates and the divide-by-zero an
 unopened link gives, slug generation, contact-link parsing, the offline
 generator, the prompt builder, validation schemas, the rate limiter, the signed
@@ -226,6 +237,21 @@ matching — where two regressions found by actually running it are now pinned:
 a skill ending a sentence, and a two-word skill wrapped across a line break. The
 public-path column allowlist is asserted too, and both of its guards were
 checked by deliberately reintroducing the regressions they exist to catch.
+
+Read time is covered the same way. The visible-time bookkeeping is a plain class
+with `now` passed in rather than closures inside a React effect, so "an hour in
+a background tab adds nothing" and "the system clock stepping backwards does not
+shorten the total" are assertions instead of hopes. The endpoint is exercised
+with a stubbed client over a real `text/plain` beacon body. Both guards were
+checked by reintroducing the bugs they exist to catch: counting hidden time
+fails three tests, and letting the last beacon win instead of the longest fails
+one.
+
+Driving it in a real browser then found what reading it had not: navigating away
+fires `visibilitychange` and `pagehide` about a millisecond apart, so every
+single visit was sending two beacons and doing two database writes. Reports now
+need a further whole second of reading before speaking again, which is pinned by
+a test.
 
 ```bash
 npm test
@@ -241,8 +267,8 @@ request.
 Working today: a no-account demo, auth, profile editor, per-audience and
 per-opportunity link generation (paste a job posting) with manual editing,
 public profile pages with social cards, and per-link analytics labelled by
-recipient — views, outbound contact clicks, click-through rate, and how long
-after sending a link was first opened.
+recipient — views, outbound contact clicks, click-through rate, how long after
+sending a link was first opened, and how long it was actually read for.
 
 **[PRODUCT.md](PRODUCT.md)** is the honest version of where this goes — who
 actually has this problem, what Linktree and Teal and DocSend already do, why

@@ -96,6 +96,14 @@ export interface LinkView {
   referrer: string | null
   country: string | null
   device: 'mobile' | 'desktop' | null
+  /**
+   * How long the page was visible during this view, in milliseconds.
+   *
+   * Null for most rows and that is expected — the beacon carrying it is best
+   * effort and browsers drop it. Anything reading this must treat a missing
+   * value as "not measured", never as zero.
+   */
+  dwell_ms: number | null
   created_at: string
 }
 

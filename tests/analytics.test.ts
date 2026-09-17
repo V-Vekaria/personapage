@@ -26,6 +26,7 @@ function view(linkId: string, daysAgo: number, overrides: Partial<LinkView> = {}
     referrer: null,
     country: null,
     device: 'desktop',
+    dwell_ms: null,
     created_at: new Date(NOW.getTime() - daysAgo * 86_400_000).toISOString(),
     ...overrides,
   }

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { CONTEXT_LABELS } from '@/types/database'
 import type { LinkStats } from '@/lib/analytics'
+import { formatReadTime } from '@/lib/dwell'
 
 /**
  * Per-link totals. This is a table because it is a table — several measures per
@@ -10,10 +11,16 @@ import type { LinkStats } from '@/lib/analytics'
 export function LinkPerformanceTable({
   stats,
   recipients,
+  readSamples = 0,
 }: {
   stats: LinkStats[]
   /** Link id to recipient, for links aimed at someone specific. */
   recipients?: Map<string, string>
+  /**
+   * How many views across all links carry a read time. Used only to decide
+   * whether the read column is worth explaining yet.
+   */
+  readSamples?: number
 }) {
   const max = Math.max(...stats.map((s) => s.total), 1)
 
@@ -22,20 +29,23 @@ export function LinkPerformanceTable({
       <figcaption className="mb-1 text-sm font-medium text-white">Views by link</figcaption>
       <p className="mb-5 text-xs text-zinc-500">
         {recipients?.size ? 'Who opened which link' : 'Which version of you people are actually opening'}
+        {readSamples > 0 &&
+          ' · read time is the median of the visits that reported one, counting only the time the tab was visible'}
       </p>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[520px] text-left text-sm">
+        <table className="w-full min-w-[600px] text-left text-sm">
           <thead>
             <tr className="border-b border-zinc-800 text-xs text-zinc-500">
               <th scope="col" className="pb-2 pr-3 font-medium">Link</th>
               <th scope="col" className="pb-2 pr-3 text-right font-medium">7 days</th>
               <th scope="col" className="pb-2 pr-3 text-right font-medium">Views</th>
+              <th scope="col" className="pb-2 pr-3 text-right font-medium">Read</th>
               <th scope="col" className="pb-2 text-right font-medium">Clicks</th>
             </tr>
           </thead>
           <tbody>
-            {stats.map(({ link, total, last7, clicks, clickRate, firstOpenedAt, hoursToFirstOpen, daysOpened }) => (
+            {stats.map(({ link, total, last7, clicks, clickRate, firstOpenedAt, hoursToFirstOpen, daysOpened, medianDwellMs }) => (
               <tr key={link.id} className="border-b border-zinc-900/80 last:border-0">
                 <td className="py-3 pr-3">
                   <Link
@@ -69,6 +79,15 @@ export function LinkPerformanceTable({
                 </td>
                 <td className="py-3 pr-3 text-right align-top tabular-nums text-zinc-400">{last7}</td>
                 <td className="py-3 pr-3 text-right align-top tabular-nums font-medium text-white">{total}</td>
+                <td className="py-3 pr-3 text-right align-top tabular-nums">
+                  {medianDwellMs === null ? (
+                    // Not "0s". Nobody reported a read time for this link, which
+                    // is a different thing from everybody leaving instantly.
+                    <span className="text-zinc-600">—</span>
+                  ) : (
+                    <span className="text-zinc-300">{formatReadTime(medianDwellMs)}</span>
+                  )}
+                </td>
                 <td className="py-3 text-right align-top tabular-nums">
                   <span className={clicks > 0 ? 'font-medium text-emerald-300' : 'text-zinc-600'}>
                     {clicks}

@@ -28,6 +28,13 @@ export interface LinkStats {
   hoursToFirstOpen: number | null
   /** How many separate UTC days this link was opened on. */
   daysOpened: number
+  /**
+   * Typical visible read time for this link, in milliseconds, or null when no
+   * view reported one. Median rather than mean — see `median`.
+   */
+  medianDwellMs: number | null
+  /** How many of this link's views carry a read time at all. */
+  readSamples: number
 }
 
 export interface AnalyticsSummary {
@@ -47,6 +54,17 @@ export interface AnalyticsSummary {
   clickRate: number | null
   /** The most recent open across all links, ISO, or null if there are none. */
   lastOpenedAt: string | null
+  /**
+   * Typical visible read time across every measured view, in milliseconds, or
+   * null when nothing has been measured yet.
+   */
+  medianDwellMs: number | null
+  /**
+   * How many views carry a read time. Always compare it against `total` before
+   * reading much into the median: the beacon is best effort and browsers drop
+   * it, so this is a subset of views, never all of them.
+   */
+  readSamples: number
 }
 
 function dayKey(date: Date): string {
@@ -88,6 +106,23 @@ function tally(values: string[]): NamedCount[] {
   return [...counts.entries()]
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+}
+
+/**
+ * The middle value, rounded.
+ *
+ * Median rather than mean throughout, because read times have a long tail by
+ * construction: one tab left open pushes a single value to the thirty-minute
+ * cap, which would drag the mean of five real reads by six minutes. The median
+ * shrugs that off.
+ */
+function median(values: number[]): number | null {
+  if (values.length === 0) return null
+  const sorted = [...values].sort((a, b) => a - b)
+  const middle = Math.floor(sorted.length / 2)
+  return sorted.length % 2 === 0
+    ? Math.round((sorted[middle - 1] + sorted[middle]) / 2)
+    : sorted[middle]
 }
 
 /**
@@ -156,6 +191,20 @@ export function summarise(
     else openTimes.set(view.link_id, [at])
   }
 
+  // Read times, for the views that carry one. A null dwell_ms means the browser
+  // never reported one, which is not the same as a zero-second read, so those
+  // rows are left out of the sample rather than counted as zero.
+  const allDwell: number[] = []
+  const dwellByLink = new Map<string, number[]>()
+  for (const view of views) {
+    const ms = view.dwell_ms
+    if (typeof ms !== 'number' || Number.isNaN(ms) || ms < 0) continue
+    allDwell.push(ms)
+    const existing = dwellByLink.get(view.link_id)
+    if (existing) existing.push(ms)
+    else dwellByLink.set(view.link_id, [ms])
+  }
+
   const perLink: LinkStats[] = links
     .map((link) => {
       const total = totalByLink.get(link.id) ?? 0
@@ -180,6 +229,8 @@ export function summarise(
               // artefact, not a negative wait. Floor it at zero.
               Math.max(Math.round(((first - createdAt) / 3_600_000) * 10) / 10, 0),
         daysOpened: new Set(times.map((t) => dayKey(new Date(t)))).size,
+        medianDwellMs: median(dwellByLink.get(link.id) ?? []),
+        readSamples: (dwellByLink.get(link.id) ?? []).length,
       }
     })
     .sort((a, b) => b.total - a.total || a.link.label.localeCompare(b.link.label))
@@ -214,5 +265,7 @@ export function summarise(
           stat.lastOpenedAt && (!latest || stat.lastOpenedAt > latest) ? stat.lastOpenedAt : latest,
         null
       ),
+    medianDwellMs: median(allDwell),
+    readSamples: allDwell.length,
   }
 }
