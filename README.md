@@ -63,9 +63,18 @@ npm install
 cp .env.example .env.local     # then fill in your Supabase keys
 ```
 
-Create the schema — run `supabase/migrations/0001_init.sql` against your project,
-either with `supabase db push` or by pasting it into the Supabase SQL editor. It
-is idempotent, so re-running it on a database that already has data is safe.
+Create the schema — run everything in `supabase/migrations/` against your
+project, in order, either with `supabase db push` or by pasting each file into
+the Supabase SQL editor:
+
+```
+0001_init.sql          profiles, links, link_views, and the RLS policies
+0002_link_targets.sql  who a link is aimed at, and the posting behind it
+0003_link_clicks.sql   outbound contact clicks
+```
+
+All three are idempotent, so re-running them on a database that already has data
+is safe.
 
 ```bash
 npm run dev                    # http://localhost:3000
@@ -108,18 +117,19 @@ app/
     ai/generate     generates and saves tailored content for one link
     ai/try          anonymous generation — validates, rate limits, persists nothing
     analytics/view  records a page view after verifying the link exists
+    analytics/click records an outbound contact click — the conversion event
   p/[username]/     the public profile page + its dynamic OG image
   try/              the no-account demo
 components/
   analytics/        chart and stat components
   dashboard/        sidebar and mobile navigation
-  public/           view capture
+  public/           view capture and the click-tracked contact button
   ui/               shared status banner, copy button
 lib/
   ai/               prompt builder, per-context config, job-posting targeting,
                     offline fallback
   supabase/         browser, server and service-role clients
-  analytics.ts      pure aggregation over raw view rows
+  analytics.ts      pure aggregation over raw view and click rows
   validation.ts     zod schemas shared by routes and server actions
 supabase/
   migrations/       the schema, with RLS policies
@@ -135,9 +145,10 @@ OpenAI, deployed on Vercel.**
 
 **Row level security does the access control, not the app code.** Profiles and
 active links are publicly readable; everything writable is scoped to
-`auth.uid()`. The service-role client is used in exactly two places — rendering a
-public page for an anonymous visitor, and recording a view — and both are reads
-or writes of data that is public by design.
+`auth.uid()`. The service-role client is used in exactly three places —
+rendering a public page for an anonymous visitor, recording a view, and
+recording a click — and all three are reads or writes of data that is public by
+design.
 
 **A pasted job posting lives in its own table, not on the link.** `links` is
 public by design; a posting is not — it can carry a recruiter's name, an
@@ -153,14 +164,21 @@ the constrained output schema and the filter that drops any skill the user never
 claimed. If a posting demands Kubernetes and the profile has never mentioned it,
 nothing downstream can put it on the page.
 
-**Views are written server-side, after the link is verified.** The endpoint takes
-a UUID, confirms the link exists, and only then inserts. Anonymous clients have
-no insert policy on `link_views` at all, so nobody can inflate someone's counter
-by POSTing at the API.
+**Views and clicks are written server-side, after the link is verified.** Each
+endpoint takes a UUID, confirms the link exists, and only then inserts.
+Anonymous clients have no insert policy on `link_views` or `link_clicks` at all,
+so nobody can inflate someone's counter by POSTing at the API.
 
 **Analytics stores no IP address and no user agent.** A country code from the
-edge and a desktop/mobile bucket is the entire payload. A profile page shouldn't
-become a tracker.
+edge and a desktop/mobile bucket is the entire payload, for clicks as well as
+views. A profile page shouldn't become a tracker — which is also why "opened on
+3 separate days" is derived from timestamps already stored rather than from a
+per-visitor identifier.
+
+**Clicks are recorded with `sendBeacon`.** The browser is navigating away at
+that exact moment and an ordinary request can be cancelled mid-flight; a beacon
+is queued and delivered regardless, without delaying the navigation. Losing the
+conversion event is worse than losing a view.
 
 **Generation is rate limited per user.** Twenty an hour. It's a fixed window held
 in memory, which on serverless counts per instance — enough to stop someone
@@ -188,8 +206,9 @@ has no business in a search index. The default profile page is indexable.
 
 ## Tests
 
-142 unit tests over the parts where being wrong is silent: analytics bucketing
-and week-over-week maths, slug generation, contact-link parsing, the offline
+154 unit tests over the parts where being wrong is silent: analytics bucketing
+and week-over-week maths, click-through rates and the divide-by-zero an
+unopened link gives, slug generation, contact-link parsing, the offline
 generator, the prompt builder, validation schemas, the rate limiter, the signed
 trial cookie (including that a forged one is rejected), and job-posting skill
 matching — where two regressions found by actually running it are now pinned:
@@ -209,7 +228,8 @@ request.
 Working today: a no-account demo, auth, profile editor, per-audience and
 per-opportunity link generation (paste a job posting) with manual editing,
 public profile pages with social cards, and per-link analytics labelled by
-recipient.
+recipient — views, outbound contact clicks, click-through rate, and how long
+after sending a link was first opened.
 
 **[PRODUCT.md](PRODUCT.md)** is the honest version of where this goes — who
 actually has this problem, what Linktree and Teal and DocSend already do, why
@@ -220,9 +240,10 @@ not need dressing up as a startup.
 
 Nearest concrete work:
 
-- Notify on first open — the retention loop, and the reason to log back in
-- Track outbound contact clicks, not just page views
-- Repeat-open and time-on-page analytics, not just a count
+- Notify on first open — the retention loop, and the reason to log back in.
+  Needs an email provider configured, so it is the first item here that is not
+  purely a code change
+- Time on page, not just that the page was opened
 - Move the rate limiter into Postgres so it holds across instances
 
 ---

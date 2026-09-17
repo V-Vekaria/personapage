@@ -113,13 +113,17 @@ In order, most valuable first:
    page is written against it. Grounding did not move: the posting controls
    emphasis, never claims, and the source text is stored in a table with no
    public policy so it can never reach the profile page.
-3. **Analytics worth opening the app for.** Repeat opens, first-open time
-   relative to when you sent it, time on page. Currently it counts views, which
-   is the floor, not the product.
+3. **Analytics worth opening the app for.** *Mostly built.* First-open time
+   relative to when the link was created, and how many separate days it was
+   opened on, are both shown per link now. Time on page is the piece still
+   missing.
 4. **Notify on open.** Email or push the first time a link is opened. This is
-   the retention loop; without it there is no reason to log back in.
-5. **Outbound click tracking.** Views are counted; clicks on the contact button
-   are not. That is the conversion event and it is currently invisible.
+   the retention loop; without it there is no reason to log back in. It is now
+   the top of this list, and the first item that needs infrastructure (an email
+   provider) rather than only code.
+5. ~~**Outbound click tracking.**~~ **Built.** Clicks on the contact button are
+   recorded and shown beside views with a click-through rate, so "14 views"
+   finally distinguishes fourteen people who read it from fourteen who acted.
 
 ## What to deliberately not build
 

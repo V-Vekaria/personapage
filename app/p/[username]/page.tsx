@@ -4,6 +4,7 @@ import NextLink from 'next/link'
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/server'
 import { ViewCapture } from '@/components/public/ViewCapture'
+import { ContactLink } from '@/components/public/ContactLink'
 import { connectLabel, contactHref } from '@/lib/contact'
 import { siteUrl } from '@/lib/site'
 import { CONTEXT_LABELS } from '@/types/database'
@@ -135,7 +136,9 @@ export default async function PublicProfilePage({ params, searchParams }: Props)
         )}
         {contact && (
           <div className="mt-6">
-            <ProfileButton href={contactHref(contact)}>{connectLabel(contact)}</ProfileButton>
+            <ContactLink href={contactHref(contact)} linkId={link?.id}>
+              {connectLabel(contact)}
+            </ContactLink>
           </div>
         )}
       </header>
@@ -170,7 +173,9 @@ export default async function PublicProfilePage({ params, searchParams }: Props)
           {content?.cta_text || 'Open to opportunities and conversations.'}
         </p>
         {contact && (
-          <ProfileButton href={contactHref(contact)}>{connectLabel(contact)}</ProfileButton>
+          <ContactLink href={contactHref(contact)} linkId={link?.id}>
+            {connectLabel(contact)}
+          </ContactLink>
         )}
       </Section>
 
@@ -218,18 +223,5 @@ function TagList({ items }: { items: string[] }) {
         </span>
       ))}
     </div>
-  )
-}
-
-function ProfileButton({ href, children }: { href: string; children: ReactNode }) {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-white to-violet-100 px-4 py-2.5 text-sm font-medium text-zinc-950 shadow-[0_0_30px_rgba(124,58,237,0.22)] transition hover:from-white hover:to-fuchsia-100"
-    >
-      {children}
-    </a>
   )
 }

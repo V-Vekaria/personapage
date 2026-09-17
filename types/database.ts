@@ -79,6 +79,17 @@ export interface LinkTarget {
   updated_at: string
 }
 
+/** One outbound click on a public profile — the conversion event. */
+export interface LinkClick {
+  id: string
+  link_id: string
+  target: string
+  referrer: string | null
+  country: string | null
+  device: 'mobile' | 'desktop' | null
+  created_at: string
+}
+
 export interface LinkView {
   id: string
   link_id: string

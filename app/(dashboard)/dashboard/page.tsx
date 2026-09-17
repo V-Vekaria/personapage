@@ -5,7 +5,7 @@ import { summarise } from '@/lib/analytics'
 import { StatTile } from '@/components/analytics/StatTile'
 import { publicLinkUrl } from '@/lib/site'
 import { CopyButton } from '@/components/ui/CopyButton'
-import type { Link as ProfileLink, LinkView, Profile } from '@/types/database'
+import type { Link as ProfileLink, LinkClick, LinkView, Profile } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,7 +39,16 @@ export default async function DashboardPage() {
         .returns<LinkView[]>()
     : { data: [] as LinkView[] }
 
-  const stats = summarise(views ?? [], links ?? [])
+  const { data: clicks } = linkIds.length
+    ? await supabase
+        .from('link_clicks')
+        .select('*')
+        .in('link_id', linkIds)
+        .limit(5000)
+        .returns<LinkClick[]>()
+    : { data: [] as LinkClick[] }
+
+  const stats = summarise(views ?? [], links ?? [], new Date(), 30, clicks ?? [])
   const steps = nextSteps(profile, links ?? [])
   const topLink = stats.perLink.find((s) => s.total > 0)
   const username = profile?.username ?? ''
@@ -86,9 +95,13 @@ export default async function DashboardPage() {
           detail={stats.trend === null ? 'first week of data' : `vs ${stats.previous7} prior`}
         />
         <StatTile
-          label="Live links"
-          value={(links ?? []).filter((l) => l.is_active).length}
-          detail={`${(links ?? []).length} total`}
+          label="Contact clicks"
+          value={stats.clicks}
+          detail={
+            stats.clickRate === null
+              ? `${(links ?? []).filter((l) => l.is_active).length} links live`
+              : `${stats.clickRate}% of views reached out`
+          }
         />
       </div>
 
@@ -104,6 +117,11 @@ export default async function DashboardPage() {
               </Link>
               <p className="mt-1 text-xs text-zinc-500">
                 {topLink.total} {topLink.total === 1 ? 'view' : 'views'} · {topLink.last7} in the last 7 days
+                {topLink.clicks > 0 && (
+                  <span className="text-emerald-300/85">
+                    {' '}· {topLink.clicks} reached out
+                  </span>
+                )}
               </p>
             </div>
             {username && <CopyButton value={publicLinkUrl(username, topLink.link.slug)} />}

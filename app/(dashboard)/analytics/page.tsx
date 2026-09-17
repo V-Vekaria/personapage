@@ -6,7 +6,7 @@ import { StatTile } from '@/components/analytics/StatTile'
 import { DailyViewsChart } from '@/components/analytics/DailyViewsChart'
 import { BarList } from '@/components/analytics/BarList'
 import { LinkPerformanceTable } from '@/components/analytics/LinkPerformanceTable'
-import type { Link as ProfileLink, LinkTarget, LinkView } from '@/types/database'
+import type { Link as ProfileLink, LinkClick, LinkTarget, LinkView } from '@/types/database'
 
 export const metadata = { title: 'Analytics · PersonaPage' }
 
@@ -44,6 +44,15 @@ export default async function AnalyticsPage() {
         .returns<LinkView[]>()
     : { data: [] as LinkView[] }
 
+  const { data: clicks } = linkIds.length
+    ? await supabase
+        .from('link_clicks')
+        .select('*')
+        .in('link_id', linkIds)
+        .limit(5000)
+        .returns<LinkClick[]>()
+    : { data: [] as LinkClick[] }
+
   const { data: targets } = linkIds.length
     ? await supabase
         .from('link_targets')
@@ -56,7 +65,7 @@ export default async function AnalyticsPage() {
     (targets ?? []).filter((t) => t.recipient).map((t) => [t.link_id, t.recipient])
   )
 
-  const stats = summarise(views ?? [], links ?? [])
+  const stats = summarise(views ?? [], links ?? [], new Date(), 30, clicks ?? [])
 
   return (
     <div className="relative z-10 max-w-4xl p-4 sm:p-6 md:p-8">
@@ -85,8 +94,17 @@ export default async function AnalyticsPage() {
         />
       ) : (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatTile label="Total views" value={stats.total} detail="all time" />
+            <StatTile
+              label="Contact clicks"
+              value={stats.clicks}
+              detail={
+                stats.clickRate === null
+                  ? 'nothing opened yet'
+                  : `${stats.clickRate}% of views reached out`
+              }
+            />
             <StatTile
               label="Last 7 days"
               value={stats.last7}
@@ -98,15 +116,11 @@ export default async function AnalyticsPage() {
               }
             />
             <StatTile
-              label="Busiest day"
-              value={stats.busiestDay?.count ?? 0}
+              label="Last opened"
+              value={stats.lastOpenedAt ? relativeDay(stats.lastOpenedAt) : '—'}
               detail={
                 stats.busiestDay
-                  ? new Date(`${stats.busiestDay.date}T00:00:00Z`).toLocaleDateString('en-GB', {
-                      day: 'numeric',
-                      month: 'long',
-                      timeZone: 'UTC',
-                    })
+                  ? `busiest day: ${stats.busiestDay.count} views`
                   : 'no views yet'
               }
             />
@@ -167,4 +181,14 @@ function EmptyState({
       </Link>
     </div>
   )
+}
+
+/** "Today", "Yesterday", or a short date — whichever a person would say out loud. */
+function relativeDay(iso: string): string {
+  const then = new Date(iso)
+  const days = Math.floor((Date.now() - then.getTime()) / 86_400_000)
+  if (days <= 0) return 'Today'
+  if (days === 1) return 'Yesterday'
+  if (days < 7) return `${days}d ago`
+  return then.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 }

@@ -87,6 +87,13 @@ export const linkTargetSchema = z.object({
 
 export type LinkTargetInput = z.infer<typeof linkTargetSchema>
 
+export const clickRequestSchema = z.object({
+  link_id: z.uuid(),
+  target: z.string().trim().min(1).max(40).default('contact'),
+  referrer: z.string().max(500).nullish(),
+  device: z.enum(['mobile', 'desktop']).nullish(),
+})
+
 export const contextSchema = z.enum(CONTEXTS)
 export const toneSchema = z.enum(TONES)
 

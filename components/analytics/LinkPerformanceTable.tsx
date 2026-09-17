@@ -25,16 +25,17 @@ export function LinkPerformanceTable({
       </p>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[420px] text-left text-sm">
+        <table className="w-full min-w-[520px] text-left text-sm">
           <thead>
             <tr className="border-b border-zinc-800 text-xs text-zinc-500">
               <th scope="col" className="pb-2 pr-3 font-medium">Link</th>
               <th scope="col" className="pb-2 pr-3 text-right font-medium">7 days</th>
-              <th scope="col" className="pb-2 text-right font-medium">Total</th>
+              <th scope="col" className="pb-2 pr-3 text-right font-medium">Views</th>
+              <th scope="col" className="pb-2 text-right font-medium">Clicks</th>
             </tr>
           </thead>
           <tbody>
-            {stats.map(({ link, total, last7 }) => (
+            {stats.map(({ link, total, last7, clicks, clickRate, firstOpenedAt, hoursToFirstOpen, daysOpened }) => (
               <tr key={link.id} className="border-b border-zinc-900/80 last:border-0">
                 <td className="py-3 pr-3">
                   <Link
@@ -59,9 +60,23 @@ export function LinkPerformanceTable({
                       style={{ width: `${total === 0 ? 0 : Math.max((total / max) * 100, 2)}%` }}
                     />
                   </div>
+                  {firstOpenedAt && (
+                    <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+                      {describeFirstOpen(hoursToFirstOpen)}
+                      {daysOpened > 1 && ` · opened on ${daysOpened} separate days`}
+                    </p>
+                  )}
                 </td>
                 <td className="py-3 pr-3 text-right align-top tabular-nums text-zinc-400">{last7}</td>
-                <td className="py-3 text-right align-top tabular-nums font-medium text-white">{total}</td>
+                <td className="py-3 pr-3 text-right align-top tabular-nums font-medium text-white">{total}</td>
+                <td className="py-3 text-right align-top tabular-nums">
+                  <span className={clicks > 0 ? 'font-medium text-emerald-300' : 'text-zinc-600'}>
+                    {clicks}
+                  </span>
+                  {clickRate !== null && total > 0 && (
+                    <span className="ml-1.5 text-xs text-zinc-600">{clickRate}%</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -69,4 +84,16 @@ export function LinkPerformanceTable({
       </div>
     </figure>
   )
+}
+
+/**
+ * Turns hours-to-first-open into something a person reads without doing
+ * arithmetic. "Opened within the hour" says more than "0.4".
+ */
+function describeFirstOpen(hours: number | null): string {
+  if (hours === null) return 'Opened'
+  if (hours < 1) return 'Opened within the hour'
+  if (hours < 24) return `Opened after ${Math.round(hours)}h`
+  const days = Math.round(hours / 24)
+  return `Opened after ${days} ${days === 1 ? 'day' : 'days'}`
 }
